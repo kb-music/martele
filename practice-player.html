@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Practice Player Loop Drag</title>
+<style>
+body{font-family:Arial;max-width:1200px;margin:auto;padding:20px;background:#f2f2f2;}
+.box{border:1px solid #ccc;border-radius:8px;background:white;padding:15px;margin-bottom:15px;}
+.display{display:inline-block;border:1px solid #3399ff;border-radius:7px;padding:6px 12px;font-family:monospace;font-weight:bold;font-size:22px;text-align:center;width:180px;}
+#trackName{border:1px solid #3399ff;border-radius:7px;padding:6px 12px;font-family:monospace;font-weight:bold;font-size:22px;text-align:center;margin-top:10px;}
+#albumName{border:1px solid #3399ff;border-radius:7px;padding:6px 12px;font-weight:bold;font-size:22px;text-align:center;margin-bottom:10px;background:#3399ff;color:white;}
+#albumButtons{display:flex;gap:6px;margin-bottom:10px;}
+#playlist div{padding:6px;border-bottom:1px solid #eee;cursor:pointer;}
+#playlist div:hover{background:#eef5ff;}
+#playlist .current{font-weight:bold;background:rgba(100,200,255,0.25);}
+button{width:44px;height:44px;border:none;border-radius:6px;background:#3399ff;color:white;font-size:20px;cursor:pointer;margin:0 3px;box-shadow:0 4px 6px rgba(0,0,0,0.25);}
+.sliderRow{margin-top:12px;}
+.sliderRow span{display:inline-block;width:70px;}
+input[type=range]{width:100%;-webkit-appearance:none;height:8px;border-radius:4px;background:#ccc;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#3399ff;cursor:pointer;margin-top:-4px;}
+.flexContainer{display:flex;gap:12px;}
+#playlist{width:33%;max-height:700px;overflow:auto;}
+#pdfContainer{width:67%;height:800px;overflow:auto;border:1px solid #3399ff;border-radius:7px;}
+#pdfViewer{width:100%;height:100%;border:none;}
+.progressContainer{position:relative;width:100%;height:16px;margin-top:6px;}
+#progressSlider{position:relative;z-index:1;}
+.marker{position:absolute;width:10px;height:20px;background:red;top:-6px;border-radius:3px;cursor:pointer;z-index:2;}
+.inMarker{background:green;}
+.outMarker{background:orange;}
+.loopFill{position:absolute;top:0;height:8px;background:rgba(51,153,255,0.3);z-index:0;border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="box">
+<div id="albumName">My First Staccato stroke</div>
+
+<!-- Album buttons row -->
+<div id="albumButtons" style="display:flex; gap:6px; margin-top:10px;">
+  <a href="https://sites.google.com/view/mfrst/demo/demo1-il" target="_self" style="flex:1; text-align:center; text-decoration:none;">
+    <button style="width:100%;">Back to Main</button>
+  </a>
+  <a href="https://example.com/2" target="_blank" style="flex:1; text-align:center; text-decoration:none;">
+    <button style="width:100%;">Album 2</button>
+  </a>
+  <a href="https://example.com/3" target="_blank" style="flex:1; text-align:center; text-decoration:none;">
+    <button style="width:100%;">Album 3</button>
+  </a>
+  <a href="https://example.com/4" target="_blank" style="flex:1; text-align:center; text-decoration:none;">
+    <button style="width:100%;">Print PDF</button>
+  </a>
+</div>
+
+<div id="trackName">No track</div>
+
+<div style="margin-top:10px; display:flex; align-items:center; gap:6px;">
+  <button id="prev">⏮</button>
+  <button id="play">▶</button>
+  <button id="next">⏭</button>
+  <span class="display" id="time">00:00 / 00:00</span>
+  <button id="slow">−</button>
+  <button id="reset">=</button>
+  <button id="fast">+</button>
+  <span class="display" id="speedDisplay">Speed: X <span id="speedVal">1.00</span></span>
+  <!-- Loop control buttons after speed display -->
+  <button id="loopA">A</button>
+  <button id="loopB">B</button>
+  <button id="loopC">C</button>
+</div>
+
+<div class="sliderRow">
+<span>Speed</span>
+<input id="speedSlider" type="range" min="0.7" max="1.3" step="0.01" value="1">
+</div>
+
+<div class="sliderRow">
+<span>Volume</span>
+<input id="volume" type="range" min="0" max="1" step="0.01" value="0.5">
+</div>
+
+<div class="sliderRow">
+<span>Progress</span>
+<div class="progressContainer">
+  <input id="progressSlider" type="range" min="0" max="100" step="0.1" value="0">
+  <div class="loopFill" id="loopFill"></div>
+  <div class="marker inMarker" id="inMarker" style="left:0"></div>
+  <div class="marker outMarker" id="outMarker" style="left:0"></div>
+</div>
+</div>
+</div>
+
+<div class="flexContainer box">
+<div id="playlist"></div>
+<div id="pdfContainer">
+<iframe id="pdfViewer" src="" allowfullscreen></iframe>
+</div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+const audio=document.getElementById("audio")
+const playlist=document.getElementById("playlist")
+const trackName=document.getElementById("trackName")
+const play=document.getElementById("play")
+const prev=document.getElementById("prev")
+const next=document.getElementById("next")
+const slow=document.getElementById("slow")
+const fast=document.getElementById("fast")
+const reset=document.getElementById("reset")
+const speedSlider=document.getElementById("speedSlider")
+const speedVal=document.getElementById("speedVal")
+const volume=document.getElementById("volume")
+const time=document.getElementById("time")
+const progressSlider=document.getElementById("progressSlider")
+const pdfViewer=document.getElementById("pdfViewer")
+const loopFill=document.getElementById("loopFill")
+const inMarker=document.getElementById("inMarker")
+const outMarker=document.getElementById("outMarker")
+const progressContainer=document.querySelector(".progressContainer")
+const loopAButton=document.getElementById("loopA")
+const loopBButton=document.getElementById("loopB")
+const loopCButton=document.getElementById("loopC")
+
+let current=0, speed=1
+let loopIn=null, loopOut=null
+let isDraggingIn=false, isDraggingOut=false
+
+const tracks = [
+
+{name:"1. My First Martele", url:"https://kb-music.github.io/martele/Martele_CL-01.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-01_NN.pdf"},
+{name:"2. My Happy Ball", url:"https://kb-music.github.io/martele/Martele_CL-02.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-02_NN.pdf"},
+{name:"3. Two Friends", url:"https://kb-music.github.io/martele/Martele_CL-03.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-03_NN.pdf"},
+{name:"4. Polka Dance", url:"https://kb-music.github.io/martele/Martele_CL-04.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-04_NN.pdf"},
+{name:"5. Quarts", url:"https://kb-music.github.io/martele/Martele_CL-05.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-05_NN.pdf"},
+{name:"6. Сuckoo", url:"https://kb-music.github.io/martele/Martele_CL-06.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-06_NN.pdf"},
+{name:"7. Two Proudlings", url:"https://kb-music.github.io/martele/Martele_CL-07.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-07_NN.pdf"},
+{name:"8. The Hunter", url:"https://kb-music.github.io/martele/Martele_CL-08.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-08_NN.pdf"},
+{name:"9. Echo", url:"https://kb-music.github.io/martele/Martele_CL-09.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-09_NN.pdf"},
+{name:"10. The Doll", url:"https://kb-music.github.io/martele/Martele_CL-10.mp3", pdf:"https://kb-music.github.io/martele/Martele_CL-10_NN.pdf"},
+]
+
+// ===== FUNCTIONS =====
+function format(t){if(!t||isNaN(t))return"00:00";let m=Math.floor(t/60),s=Math.floor(t%60);return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+
+function resetLoop(){
+  loopIn = loopOut = null
+  inMarker.style.left="0"
+  outMarker.style.left="0"
+  loopFill.style.width="0%"
+}
+
+function setSpeed(v){
+  speed = Math.max(0.7, Math.min(1.3, parseFloat(v)))
+  audio.playbackRate=speed
+  speedSlider.value=speed
+  speedVal.textContent=speed.toFixed(2)
+  let centerPercent = 50
+  let percent
+  if(speed>=1){
+    percent=centerPercent + ((speed-1)/0.3)*50
+    speedSlider.style.background=`linear-gradient(to right, #ccc ${centerPercent}%, #3399ff ${centerPercent}%, #3399ff ${percent}%, #ccc ${percent}%)`
+  } else {
+    percent=centerPercent - ((1-speed)/0.3)*50
+    speedSlider.style.background=`linear-gradient(to right, #ccc ${percent}%, #3399ff ${percent}%, #3399ff ${centerPercent}%, #ccc ${centerPercent}%)`
+  }
+}
+
+function loadTrack(i){
+  current=i
+  const t=tracks[i]
+  audio.src=t.url
+  trackName.textContent=t.name
+  pdfViewer.src=t.pdf
+  setSpeed(1) // reset speed
+  resetLoop() // reset loop
+  updatePlaylist()
+  audio.play()
+}
+
+function updatePlaylist(){
+  playlist.innerHTML=""
+  tracks.forEach((t,i)=>{
+    let div=document.createElement("div")
+    div.textContent=t.name
+    div.classList.toggle("current",i===current)
+    div.onclick=()=>loadTrack(i)
+    playlist.appendChild(div)
+  })
+}
+
+// ===== CONTROLS =====
+play.onclick=()=>audio.paused?audio.play():audio.pause()
+audio.onplay=()=>play.textContent="⏸"
+audio.onpause=()=>play.textContent="▶"
+prev.onclick=()=>loadTrack((current-1+tracks.length)%tracks.length)
+next.onclick=()=>loadTrack((current+1)%tracks.length)
+
+// ===== SPEED CONTROLS =====
+speedSlider.oninput=()=>setSpeed(speedSlider.value)
+slow.onclick=()=>setSpeed(speed-0.01)
+fast.onclick=()=>setSpeed(speed+0.01)
+reset.onclick=()=>setSpeed(1)
+
+// ===== VOLUME =====
+function updateVolumeBg(){
+  let val=parseFloat(volume.value)
+  let max=parseFloat(volume.max)
+  let percent=(val/max)*100
+  volume.style.background=`linear-gradient(to right, #3399ff ${percent}%, #ccc ${percent}%)`
+}
+volume.oninput=()=>{
+  audio.volume=volume.value
+  updateVolumeBg()
+}
+volume.value=0.5
+audio.volume=0.5
+updateVolumeBg()
+
+// ===== PROGRESS + LOOP =====
+
+
+audio.ontimeupdate=()=>{
+  time.textContent=format(audio.currentTime)+" / "+format(audio.duration)
+  let val=(audio.currentTime/audio.duration)*100
+  progressSlider.value=val
+  updateProgressBg()
+
+  if(loopIn!==null && loopOut!==null){
+    let start=(loopIn/audio.duration)*100
+    let end=(loopOut/audio.duration)*100
+    loopFill.style.left=start+"%"
+    loopFill.style.width=(end-start)+"%"
+    if(audio.currentTime>=loopOut) audio.currentTime=loopIn
+  } else {loopFill.style.width="0%"}
+
+  if(loopIn!==null) inMarker.style.left=(loopIn/audio.duration*100)+"%"
+  if(loopOut!==null) outMarker.style.left=(loopOut/audio.duration*100)+"%"
+}
+
+
+function updateProgressBg(){
+  let val=parseFloat(progressSlider.value)
+  progressSlider.style.background=`linear-gradient(to right, #3399ff 0%, #3399ff ${val}%, #ccc ${val}%, #ccc 100%)`
+}
+
+progressSlider.oninput=()=>{
+  audio.currentTime=(progressSlider.value/100)*audio.duration
+  updateProgressBg()
+}
+
+
+
+// ===== DRAG MARKERS =====
+function dragMarker(marker, setFunc){
+  marker.onmousedown=(e)=>{
+    e.preventDefault()
+    function move(e){
+      const rect=progressContainer.getBoundingClientRect()
+      let pct=Math.min(Math.max((e.clientX-rect.left)/rect.width,0),1)
+      setFunc(pct*audio.duration)
+    }
+    function up(){document.removeEventListener("mousemove",move); document.removeEventListener("mouseup",up);}
+    document.addEventListener("mousemove",move)
+    document.addEventListener("mouseup",up)
+  }
+}
+dragMarker(inMarker,(v)=>loopIn=v)
+dragMarker(outMarker,(v)=>loopOut=v)
+
+// ===== KEYBOARD =====
+document.addEventListener("keydown",e=>{
+  if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key)) e.preventDefault()
+  switch(e.key){
+    case " ": play.click(); break
+    case "ArrowRight": audio.currentTime+=0.5; break
+    case "ArrowLeft": audio.currentTime-=0.5; break
+    case "ArrowUp": setSpeed(speed+0.01); break
+    case "ArrowDown": setSpeed(speed-0.01); break
+    case "a": loopIn = audio.currentTime; break
+    case "b": loopOut = audio.currentTime; break
+    case "c": resetLoop(); break
+  }
+})
+
+// ===== LOOP BUTTONS =====
+loopAButton.onclick=()=>{loopIn = audio.currentTime}
+loopBButton.onclick=()=>{loopOut = audio.currentTime}
+loopCButton.onclick=()=>resetLoop()
+
+// ===== AUTOPLAY NEXT TRACK =====
+audio.onended=()=>{
+  let nextTrack = (current+1) % tracks.length
+  loadTrack(nextTrack)
+}
+
+// ===== INIT =====
+updatePlaylist()
+loadTrack(0)
+</script>
+</body>
+</html>
