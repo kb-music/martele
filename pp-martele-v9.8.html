@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Practice Player v9.8</title>
+
+<style>
+  :root{
+    --accent:#3399ff;
+    --accent-dark:#1f7fe0;
+    --bg:#f2f4f7;
+    --panel:#ffffff;
+    --border:#cfd8e3;
+    --text:#1f1f1f;
+    --muted:#666;
+    --shadow:0 8px 18px rgba(0,0,0,0.18), 0 3px 8px rgba(0,0,0,0.12);
+    --shadow-pressed:0 2px 5px rgba(0,0,0,0.14);
+    --radius:10px;
+    --wave-height:100px;
+
+    --loop-a:#00c853;
+    --loop-b:#ff9800;
+    --loop-c:#ff1744;
+  }
+
+  *{box-sizing:border-box;}
+
+  html{
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar{
+    width:0;
+    height:0;
+    display:none;
+  }
+
+  body{
+    margin:0;
+    padding:14px;
+    font-family:Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .page{
+    max-width:1160px;
+    margin:0 auto;
+  }
+
+  .box{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:var(--panel);
+    padding:12px;
+    margin-bottom:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .statusMessage{
+    display:none;
+    margin-top:8px;
+    padding:10px 12px;
+    border-radius:6px;
+    font-weight:bold;
+    line-height:1.35;
+  }
+
+  .statusMessage.error{
+    display:block;
+    background:#ffe7e7;
+    color:#9c1f1f;
+    border:1px solid #f0b5b5;
+  }
+
+  .topBar,
+  .navLinksRow,
+  #trackVersions,
+  #advancedControls,
+  #waveformContainer,
+  .sliderDualRow,
+  #helpPanel{
+    max-width:1040px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  .topBar{
+    display:grid;
+    grid-template-columns:96px minmax(0, 1fr) 96px;
+    gap:10px;
+    align-items:stretch;
+  }
+
+  .bigControl{
+    min-height:88px;
+    border:none;
+    border-radius:var(--radius);
+    background:var(--accent);
+    color:#fff;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    font-weight:bold;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .bigControl:hover,
+  .toolbarButton:hover,
+  .trackButton:hover,
+  .versionButton:hover,
+  .navLinkButton:hover,
+  .smallControl:hover,
+  .helpActionButton:hover{
+    background:var(--accent-dark);
+    box-shadow:0 10px 20px rgba(0,0,0,0.20), 0 4px 10px rgba(0,0,0,0.14);
+  }
+
+  .bigControl:focus-visible,
+  .toolbarButton:focus-visible,
+  .trackButton:focus-visible,
+  .versionButton:focus-visible,
+  .navLinkButton:focus-visible,
+  .smallControl:focus-visible,
+  .helpActionButton:focus-visible,
+  input[type=range]:focus-visible{
+    outline:3px solid rgba(51,153,255,0.35);
+    outline-offset:2px;
+  }
+
+  .bigPlayButton{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    line-height:1;
+  }
+
+  .modeButton{
+    padding:8px 6px;
+    font-size:14px;
+    line-height:1.08;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+    overflow:hidden;
+  }
+
+  #playModeText{
+    display:block;
+    white-space:pre-line;
+    word-break:normal;
+    overflow-wrap:normal;
+    letter-spacing:0.2px;
+  }
+
+  .infoPanel{
+    min-height:88px;
+    min-width:0;
+    border:1px solid var(--accent);
+    border-radius:var(--radius);
+    background:linear-gradient(180deg, #3ea2ff 0%, #2e92ef 100%);
+    padding:10px 14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .infoLine{
+    font-size:20px;
+    font-weight:bold;
+    text-align:center;
+    line-height:1.2;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
+  .infoLabel{
+    color:#000;
+  }
+
+  .infoValue{
+    color:#fff;
+  }
+
+  .navLinksRow{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .toolbarButton,
+  .navLinkButton{
+    flex:1 1 0;
+    min-width:0;
+    min-height:44px;
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:bold;
+    font-size:15px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    text-decoration:none;
+    padding:9px 10px;
+    white-space:nowrap;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .toolbarButton.is-active,
+  .versionButton.is-active,
+  .smallControl.is-active,
+  .bigControl.is-active,
+  .trackButton.is-active,
+  .helpActionButton.is-active{
+    box-shadow:var(--shadow-pressed);
+    transform:translateY(1px);
+  }
+
+  #trackVersions,
+  #advancedControls{
+    display:none;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    width:100%;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  #trackVersions.open,
+  #advancedControls.open{
+    display:flex;
+  }
+
+  .versionWrap{
+    flex:1 1 0;
+    min-width:0;
+  }
+
+  .versionButton{
+    width:100%;
+    min-height:58px;
+    padding:6px 8px;
+    border:2px solid var(--accent);
+    border-radius:6px;
+    background:#fff;
+    color:var(--accent);
+    font-weight:bold;
+    font-size:18px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    line-height:1.15;
+    white-space:normal;
+    text-align:center;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .versionButton.is-active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+
+  .versionButton.disabled{
+    background:#eee;
+    color:#777;
+    border-color:#ccc;
+    box-shadow:none;
+    cursor:default;
+    pointer-events:none;
+  }
+
+  .controlsStrip{
+    display:flex;
+    flex-wrap:nowrap;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .controlGroup{
+    display:flex;
+    flex-wrap:nowrap;
+    align-items:center;
+    gap:6px;
+    min-width:0;
+    flex:0 0 auto;
+  }
+
+  .smallControl{
+    flex:0 0 auto;
+    min-width:52px;
+    height:44px;
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .playbackStartStopButton{
+    min-width:58px;
+    font-size:24px;
+    letter-spacing:-1px;
+  }
+
+  .display{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:104px;
+    min-height:44px;
+    border:1px solid var(--accent);
+    border-radius:7px;
+    padding:6px 10px;
+    font-family:monospace;
+    font-weight:bold;
+    font-size:20px;
+    text-align:center;
+    background:#fff;
+    white-space:nowrap;
+  }
+
+  .inlineLabel{
+    flex:0 0 auto;
+    font-weight:bold;
+    font-size:16px;
+    padding:0 4px 0 8px;
+    white-space:nowrap;
+  }
+
+  #helpPanel{
+    display:none;
+    margin-top:12px;
+    padding:14px 16px;
+    border:1px solid rgba(51,153,255,0.28);
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(245,250,255,0.97) 100%);
+    box-shadow:0 4px 12px rgba(0,0,0,0.04);
+    line-height:1.45;
+  }
+
+  #helpPanel.open{
+    display:block;
+  }
+
+  .helpTitle{
+    margin:0 0 8px 0;
+    font-size:20px;
+    line-height:1.2;
+    color:#155da8;
+  }
+
+  .helpText{
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:#22313f;
+  }
+
+  .helpSubTitle{
+    margin:12px 0 8px 0;
+    font-size:16px;
+    color:#155da8;
+  }
+
+  .hotkeyList{
+    list-style:none;
+    margin:0;
+    padding:0;
+    font-size:14px;
+  }
+
+  .hotkeyList li{
+    display:grid;
+    grid-template-columns:150px 1fr;
+    gap:10px;
+    align-items:start;
+    padding:5px 0;
+    border-bottom:1px solid rgba(51,153,255,0.10);
+  }
+
+  .hotkeyList li:last-child{
+    border-bottom:none;
+  }
+
+  .hotkeyKey{
+    font-weight:bold;
+    color:#155da8;
+    white-space:nowrap;
+  }
+
+  .helpNote{
+    margin-top:10px;
+    padding:9px 11px;
+    border-radius:8px;
+    background:rgba(51,153,255,0.08);
+    color:#21405f;
+    font-size:13px;
+    line-height:1.4;
+  }
+
+  .helpActions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    margin-top:10px;
+  }
+
+  .helpActionButton{
+    min-height:38px;
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:bold;
+    font-size:13px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    padding:8px 11px;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .helpActionText{
+    font-size:13px;
+    color:#21405f;
+    line-height:1.4;
+    max-width:620px;
+  }
+
+  #waveformContainer{
+    border:1px solid var(--accent);
+    border-radius:7px;
+    padding:6px;
+    margin-top:10px;
+    background:#fff;
+  }
+
+  #waveform{
+    display:block;
+    width:100%;
+    height:var(--wave-height);
+    background:#fff;
+    border-radius:4px;
+    cursor:pointer;
+    touch-action:none;
+  }
+
+  .sliderDualRow{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    width:100%;
+    margin-top:10px;
+  }
+
+  .sliderCard{
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:9px 11px;
+    background:#fff;
+  }
+
+  .sliderLabel{
+    font-weight:bold;
+    margin-bottom:7px;
+    font-size:15px;
+  }
+
+  .sliderHint{
+    display:none;
+    margin-top:8px;
+    padding:8px 10px;
+    border-radius:7px;
+    background:#eef7ff;
+    color:#155da8;
+    border:1px solid #b9d9fb;
+    font-size:13px;
+    line-height:1.35;
+    font-weight:bold;
+  }
+
+  .sliderHint.show{
+    display:block;
+  }
+
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    appearance:none;
+    height:8px;
+    border-radius:4px;
+    background:#ccc;
+    outline:none;
+  }
+
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    margin-top:-4px;
+    border:none;
+  }
+
+  input[type=range]::-moz-range-thumb{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    border:none;
+  }
+
+  .mainContent{
+    display:block;
+  }
+
+  .mainContent .topBar{
+    max-width:none;
+    margin-bottom:12px;
+  }
+
+  .mainColumns{
+    display:flex;
+    gap:12px;
+    align-items:stretch;
+  }
+
+  .playlistBox{
+    width:33%;
+    max-height:700px;
+    overflow:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .playlistList{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+
+  .playlistItem{
+    border-bottom:1px solid #eee;
+  }
+
+  .trackButton{
+    width:100%;
+    border:none;
+    background:#fff;
+    text-align:left;
+    padding:10px 12px;
+    cursor:pointer;
+    color:var(--text);
+    font-size:15px;
+    transition:background 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+    border-radius:0;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .trackButton.current{
+    font-weight:bold;
+    background:rgba(100,200,255,0.25);
+  }
+
+  .pdfContainer{
+    width:67%;
+    height:800px;
+    overflow:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    border:1px solid var(--accent);
+    border-radius:7px;
+    background:#fff;
+  }
+
+  #pdfViewer{
+    width:100%;
+    height:100%;
+    border:none;
+  }
+
+  #loopA{
+    background:#fff;
+    color:var(--loop-a);
+    border:2px solid var(--loop-a);
+  }
+
+  #loopB{
+    background:#fff;
+    color:var(--loop-b);
+    border:2px solid var(--loop-b);
+  }
+
+  #loopC{
+    background:#fff;
+    color:var(--loop-c);
+    border:2px solid var(--loop-c);
+  }
+
+  #loopA:hover{
+    background:rgba(0,200,83,0.16);
+  }
+
+  #loopB:hover{
+    background:rgba(255,152,0,0.16);
+  }
+
+  #loopC:hover{
+    background:rgba(255,23,68,0.16);
+  }
+
+  #loopA.is-active{
+    background:rgba(0,200,83,0.24);
+  }
+
+  #loopB.is-active{
+    background:rgba(255,152,0,0.24);
+  }
+
+  #loopC.is-active{
+    background:rgba(255,23,68,0.24);
+  }
+
+  .customTooltip{
+    position:fixed;
+    z-index:99999;
+    max-width:min(420px, calc(100vw - 24px));
+    padding:7px 9px;
+    border-radius:8px;
+    background:rgba(255,255,255,0.78);
+    color:var(--accent);
+    border:1px solid rgba(51,153,255,0.28);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    font-size:18px;
+    line-height:1.0;
+    font-weight:bold;
+    box-shadow:0 8px 15px rgba(0,0,0,0.28);
+    pointer-events:none;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(4px);
+    transition:opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+    word-break:break-word;
+  }
+
+  .customTooltip.show{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0);
+  }
+
+  @media (max-width: 900px){
+    .topBar{
+      grid-template-columns:96px minmax(0, 1fr) 96px;
+    }
+
+    .mainColumns{
+      flex-direction:column;
+    }
+
+    .playlistBox,
+    .pdfContainer{
+      width:100%;
+    }
+
+    .sliderDualRow{
+      grid-template-columns:1fr;
+    }
+
+    #trackVersions{
+      flex-wrap:wrap;
+    }
+
+    .versionWrap{
+      flex:1 1 calc(50% - 8px);
+      min-width:150px;
+    }
+
+    .hotkeyList li{
+      grid-template-columns:1fr;
+      gap:2px;
+    }
+
+    .hotkeyKey{
+      margin-bottom:2px;
+    }
+  }
+
+  @media (max-width: 820px){
+    .navLinksRow{
+      flex-wrap:wrap;
+      overflow-x:visible;
+    }
+
+    .toolbarButton,
+    .navLinkButton{
+      flex:1 1 calc(50% - 8px);
+      white-space:normal;
+    }
+
+    .controlsStrip{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      overflow-x:visible;
+    }
+
+    .controlGroup{
+      width:100%;
+    }
+  }
+
+  @media (max-width: 520px){
+    body{
+      padding:10px;
+    }
+
+    .box{
+      padding:10px;
+    }
+
+    .topBar{
+      grid-template-columns:82px minmax(0, 1fr) 82px;
+      gap:8px;
+    }
+
+    .bigPlayButton{
+      font-size:32px;
+    }
+
+    .modeButton{
+      font-size:12px;
+      line-height:1.02;
+    }
+
+    #playModeText{
+      letter-spacing:0;
+    }
+
+    .infoLine{
+      font-size:17px;
+    }
+
+    .infoLine .infoLabel,
+    .infoLine .infoValue{
+      display:block;
+    }
+
+    .infoLine .infoLabel{
+      margin-bottom:2px;
+    }
+
+    .toolbarButton,
+    .navLinkButton{
+      min-height:42px;
+      font-size:14px;
+      padding:8px 8px;
+    }
+
+    .helpActions{
+      align-items:flex-start;
+    }
+
+    .helpActionText{
+      font-size:12px;
+    }
+
+    .helpTitle{
+      font-size:18px;
+    }
+
+    .helpText,
+    .hotkeyList,
+    .helpSubTitle{
+      font-size:13px;
+    }
+
+    .display{
+      min-width:94px;
+      font-size:18px;
+    }
+
+    .smallControl{
+      min-width:48px;
+      height:42px;
+      font-size:20px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="box">
+    <div id="statusMessage" class="statusMessage" role="alert" aria-live="assertive"></div>
+
+    <div class="navLinksRow">
+      <button
+        id="toggleHelp"
+        class="toolbarButton"
+        type="button"
+        aria-expanded="false"
+        aria-controls="helpPanel"
+        title="Show or hide help and instructions"
+      >
+        HELP
+      </button>
+
+      <a
+        href="https://drive.google.com/file/d/1vdKNLM5J5lINtC3mdqcOTRu2pS-NLd4b/view?usp=drive_link"
+        target="_blank"
+        class="navLinkButton"
+        title="Print PDF"
+      >
+        PRINT PDF
+      </a>
+
+      <a
+        href="https://demo1-il.vln.guru/"
+        target="_self"
+        class="navLinkButton"
+        title="Go to the main page"
+      >
+        MAIN PAGE
+      </a>
+
+      <button
+        id="toggleControls"
+        class="toolbarButton"
+        type="button"
+        aria-expanded="false"
+        aria-controls="advancedControls"
+        title="Show or hide advanced playback controls"
+      >
+        PLAYBACK
+      </button>
+
+      <button
+        id="toggleVersions"
+        class="toolbarButton"
+        type="button"
+        aria-expanded="false"
+        aria-controls="trackVersions"
+        title="Show or hide track versions"
+      >
+        VERSIONS
+      </button>
+    </div>
+
+    <div id="helpPanel" aria-label="Help and instructions">
+      <h2 class="helpTitle">Practice Player — Help & Instructions</h2>
+
+      <p class="helpText">
+        <strong>Practice Player</strong> is a focused music-study player built for efficient instrumental practice.
+        It combines audio playback, score viewing, waveform navigation, loop points, speed control, and track-version switching in one clear workspace.
+      </p>
+
+      <p class="helpText">
+        It is especially useful for repetition-based work: you can jump inside the waveform, repeat short passages,
+        slow the music down, restart from a saved point, and switch between accompaniment or part versions without breaking concentration.
+      </p>
+
+      <h3 class="helpSubTitle">Hotkeys</h3>
+      <ul class="hotkeyList">
+        <li><span class="hotkeyKey">Space</span><span>Play / Pause</span></li>
+        <li><span class="hotkeyKey">Left Arrow</span><span>Seek backward</span></li>
+        <li><span class="hotkeyKey">Right Arrow</span><span>Seek forward</span></li>
+        <li><span class="hotkeyKey">Up Arrow</span><span>Increase playback speed by 1%</span></li>
+        <li><span class="hotkeyKey">Down Arrow</span><span>Decrease playback speed by 1%</span></li>
+        <li><span class="hotkeyKey">R</span><span>Reset speed to 100%</span></li>
+        <li><span class="hotkeyKey">S</span><span>Restart from saved start point / stop to saved start</span></li>
+        <li><span class="hotkeyKey">A</span><span>Set loop start point</span></li>
+        <li><span class="hotkeyKey">B</span><span>Set loop end point</span></li>
+        <li><span class="hotkeyKey">C</span><span>Clear loop</span></li>
+        <li><span class="hotkeyKey">T</span><span>Turn guided tooltips off / on</span></li>
+        <li><span class="hotkeyKey">I</span><span>Show / hide this Help panel</span></li>
+      </ul>
+
+      <div class="helpNote">
+        Tooltips are now gentle “first-time only” tips: each control shows its hint once, then stops bothering you.
+        Press <strong>T</strong> to turn the guided tips off or back on for the remaining unseen controls.
+      </div>
+
+      <div class="helpActions">
+        <button id="helpToggleTooltipsButton" class="helpActionButton" type="button">
+          TOOLTIPS: AUTO
+        </button>
+        <div class="helpActionText">
+          On touch devices, use this button to change tooltip mode — no keyboard needed.
+        </div>
+      </div>
+    </div>
+
+    <div id="trackVersions" aria-label="Track versions">
+      <div class="versionWrap">
+        <button class="versionButton" type="button" data-type="main" title="Switch to demo of the piece">
+          Demo<br>of the Piece
+        </button>
+      </div>
+      <div class="versionWrap">
+        <button class="versionButton" type="button" data-type="pv1" title="Switch to violin 1st and piano">
+          Violin 1st<br>and piano
+        </button>
+      </div>
+      <div class="versionWrap">
+        <button class="versionButton" type="button" data-type="pv2" title="Switch to violin 2d and piano">
+          Violin 2d<br>and piano
+        </button>
+      </div>
+      <div class="versionWrap">
+        <button class="versionButton" type="button" data-type="dt" title="Switch to violins 1st and 2d duet">
+          Violins 1st<br>and 2d Duet
+        </button>
+      </div>
+      <div class="versionWrap">
+        <button class="versionButton" type="button" data-type="pn" title="Switch to piano accompaniment only">
+          Piano<br>Accomp-nt only
+        </button>
+      </div>
+    </div>
+
+    <div id="advancedControls" aria-label="Advanced playback controls">
+      <div class="controlsStrip">
+        <div class="controlGroup">
+          <button id="seekBack" class="smallControl" type="button" aria-label="Seek backward" title="Seek backward in current track (Hotkey: ←)">«</button>
+          <button id="middlePlayPause" class="smallControl playbackStartStopButton" type="button" aria-label="Restart from saved start or stop to saved start" title="Restart from saved start or stop to saved start (Hotkey: S)">▌▶</button>
+          <button id="seekForward" class="smallControl" type="button" aria-label="Seek forward" title="Seek forward in current track (Hotkey: →)">»</button>
+          <span id="timeDisplay" class="display" title="Current position">00:00</span>
+        </div>
+
+        <div class="controlGroup">
+          <span class="inlineLabel">Speed:</span>
+          <button id="speedMinus" class="smallControl" type="button" aria-label="Decrease speed" title="Decrease playback speed by 1% (Hotkey: ↓)">−</button>
+          <button id="speedReset" class="smallControl" type="button" aria-label="Reset speed" title="Reset playback speed to 100% (Hotkey: R)">=</button>
+          <button id="speedPlus" class="smallControl" type="button" aria-label="Increase speed" title="Increase playback speed by 1% (Hotkey: ↑)">+</button>
+        </div>
+
+        <div class="controlGroup">
+          <span class="inlineLabel">Loop:</span>
+          <button id="loopA" class="smallControl" type="button" aria-label="Set loop start" title="Set loop start (Hotkey: A)">A</button>
+          <button id="loopB" class="smallControl" type="button" aria-label="Set loop end" title="Set loop end (Hotkey: B)">B</button>
+          <button id="loopC" class="smallControl" type="button" aria-label="Clear loop" title="Clear loop (Hotkey: C)">C</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="waveformContainer">
+      <canvas id="waveform" aria-label="Waveform display" title="Click to jump. Drag green or orange handles to change loop points."></canvas>
+    </div>
+
+    <div class="sliderDualRow">
+      <div class="sliderCard">
+        <div id="volumeLabel" class="sliderLabel" title="Current volume level">Volume: 50%</div>
+        <input
+          id="volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0.5"
+          aria-label="Volume"
+          title="Adjust volume"
+        />
+        <div id="volumeIosHint" class="sliderHint">
+          On iPhone/iPad, playback volume is controlled by the device buttons.
+        </div>
+      </div>
+
+      <div class="sliderCard">
+        <div id="speedLabel" class="sliderLabel" title="Current playback speed">Speed: 100%</div>
+        <input
+          id="speedSlider"
+          type="range"
+          min="0.5"
+          max="1.5"
+          step="0.01"
+          value="1"
+          aria-label="Playback speed"
+          title="Adjust playback speed"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="mainContent box">
+    <div class="topBar">
+      <button
+        id="topPlayPause"
+        class="bigControl bigPlayButton"
+        type="button"
+        aria-label="Play or pause"
+        title="Play or pause the current track"
+      >
+        ▶
+      </button>
+
+      <div class="infoPanel" aria-live="polite">
+        <div class="infoLine">
+          <span class="infoLabel">Album Name:</span>
+          <span class="infoValue" id="albumTitleValue">My First Martele Stroke</span>
+        </div>
+        <div class="infoLine">
+          <span class="infoLabel">Track Name:</span>
+          <span class="infoValue" id="pieceTitleValue">No track</span>
+        </div>
+      </div>
+
+      <button
+        id="playModeButton"
+        class="bigControl modeButton"
+        type="button"
+        aria-label="Playback mode"
+        title="Change playback mode after the track ends"
+      >
+        <span id="playModeText">PLAY
+PIECE
+ONCE</span>
+      </button>
+    </div>
+
+    <div class="mainColumns">
+      <div class="playlistBox">
+        <ul id="playlist" class="playlistList" aria-label="Track list"></ul>
+      </div>
+
+      <div class="pdfContainer">
+        <iframe id="pdfViewer" src="" allowfullscreen title="PDF viewer"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+  <div id="customTooltip" class="customTooltip" role="tooltip" aria-hidden="true"></div>
+</div>
+
+<script>
+  // =========================
+  // CONSTANTS
+  // =========================
+  const ALBUM_NAME = "My First Martele Stroke";
+  const DEFAULT_VOLUME = 0.5;
+  const DEFAULT_SPEED = 1;
+  const MIN_SPEED = 0.5;
+  const MAX_SPEED = 1.5;
+  const SPEED_STEP = 0.01;
+  const SEEK_STEP_SECONDS = 0.1;
+  const HOLD_SEEK_INTERVAL_MS = 35;
+  const WAVEFORM_HEIGHT = 100;
+
+  const LOOP_HANDLE_HITBOX_PX = 18;
+  const LOOP_LINE_WIDTH = 5;
+  const LOOP_HANDLE_RADIUS = 8;
+  const LOOP_HANDLE_TRIANGLE_HALF_WIDTH = 9;
+  const LOOP_HANDLE_TRIANGLE_HEIGHT = 10;
+
+  const TOOLTIP_SEEN_STORAGE_KEY = "practicePlayerSeenTooltips_v98";
+  const TOOLTIP_MODE_STORAGE_KEY = "practicePlayerTooltipsEnabled_v98";
+
+  const PLAY_MODES = {
+    ONCE: "once",
+    REPEAT_ONE: "repeat_one",
+    FULL_ALBUM: "full_album"
+  };
+
+  const PLAY_MODE_LABELS = {
+    [PLAY_MODES.ONCE]: "PLAY\nPIECE\nONCE",
+    [PLAY_MODES.REPEAT_ONE]: "REPEAT\nTHIS\nPIECE",
+    [PLAY_MODES.FULL_ALBUM]: "PLAY\nFULL\nALBUM"
+  };
+
+  // =========================
+  // TRACK LIST
+  // =========================
+  const tracks = [
+     {
+      name: "1. My First Martele",
+      id: "Martele-01",
+      url: "https://kb-music.github.io/files/Martele-01_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1OEaBaO5RwbFRXA2kKHUgjQYzgCAKmyKw/preview",
+      durationText: "01:06"
+    },
+    {
+      name: "2. My Happy Ball",
+      id: "Martele-02",
+      url: "https://kb-music.github.io/files/Martele-02_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1MKnaI95vCPAHtXUGJFVjgYy_zysxFyMR/preview",
+      durationText: "01:18"
+    },
+    {
+      name: "3. Two Friends",
+      id: "Martele-03",
+      url: "https://kb-music.github.io/files/Martele-03_CL.mp3",
+      pdf: "https://drive.google.com/file/d/11tl-HosEN7PyTv-jUp67JxPL1Ox0laJL/preview",
+      durationText: "02:34"
+    },
+    {
+      name: "4. Polka Dance",
+      id: "Martele-04",
+      url: "https://kb-music.github.io/files/Martele-04_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1gPgaf08KMRfJ_8--88RjxvkA7AF7vJ4d/preview",
+      durationText: "01:55"
+    },
+    {
+      name: "5. Quarts",
+      id: "Martele-5",
+      url: "https://kb-music.github.io/files/Martele-10_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1Ojg9kk3ky3vA8SdfKjKXbHEPK6k6-oXY/preview",
+      durationText: "01:20"
+    },
+    {
+      name: "6. Cuckoo",
+      id: "Martele-05",
+      url: "https://kb-music.github.io/files/Martele-06_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1lM6bRat5BxK9ld-eWqwOLlH5c3cnjkRV/preview",
+      durationText: "02:35"
+    },
+    {
+      name: "7. Two Proudlings",
+      id: "Martele-07",
+      url: "https://kb-music.github.io/files/Martele-07_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1NJDLhJzdUwiIkVbcQ3A2PmI0NBEb0Ptl/preview",
+      durationText: "02:38"
+    },
+    {
+      name: "8. The Hunter",
+      id: "Martele-08",
+      url: "https://kb-music.github.io/files/Martele-08_CL.mp3",
+      pdf: "https://drive.google.com/file/d/17xfqsw_JCGfc8GDGVtKjJTKBY7nNDi23/preview",
+      durationText: "02:05"
+    },
+    {
+      name: "9. Echo",
+      id: "Martele-09",
+      url: "https://kb-music.github.io/files/Martele-09_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1UBI-RZAtESIVJnhn_Cgjjic0qb2RdCsV/preview",
+      durationText: "01:09"
+    },
+    {
+      name: "10. The Doll",
+      id: "Martele-10",
+      url: "https://kb-music.github.io/files/Martele-10_CL.mp3",
+      pdf: "https://drive.google.com/file/d/1Ojg9kk3ky3vA8SdfKjKXbHEPK6k6-oXY/preview",
+      durationText: "00:59"
+    }
+  ];
+
+
+  // =========================
+  // ELEMENTS
+  // =========================
+  const audio = document.getElementById("audio");
+
+  const topPlayPause = document.getElementById("topPlayPause");
+  const middlePlayPause = document.getElementById("middlePlayPause");
+  const playModeButton = document.getElementById("playModeButton");
+  const playModeText = document.getElementById("playModeText");
+
+  const albumTitleValue = document.getElementById("albumTitleValue");
+  const pieceTitleValue = document.getElementById("pieceTitleValue");
+
+  const statusMessage = document.getElementById("statusMessage");
+
+  const toggleVersionsBtn = document.getElementById("toggleVersions");
+  const toggleControlsBtn = document.getElementById("toggleControls");
+  const toggleHelpBtn = document.getElementById("toggleHelp");
+
+  const trackVersionsBlock = document.getElementById("trackVersions");
+  const advancedControlsBlock = document.getElementById("advancedControls");
+  const helpPanel = document.getElementById("helpPanel");
+  const helpToggleTooltipsButton = document.getElementById("helpToggleTooltipsButton");
+
+  const seekBackButton = document.getElementById("seekBack");
+  const seekForwardButton = document.getElementById("seekForward");
+
+  const speedMinusButton = document.getElementById("speedMinus");
+  const speedPlusButton = document.getElementById("speedPlus");
+  const speedResetButton = document.getElementById("speedReset");
+
+  const loopAButton = document.getElementById("loopA");
+  const loopBButton = document.getElementById("loopB");
+  const loopCButton = document.getElementById("loopC");
+
+  const timeDisplay = document.getElementById("timeDisplay");
+
+  const speedSlider = document.getElementById("speedSlider");
+  const volumeSlider = document.getElementById("volume");
+  const volumeIosHint = document.getElementById("volumeIosHint");
+  const speedLabel = document.getElementById("speedLabel");
+  const volumeLabel = document.getElementById("volumeLabel");
+
+  const playlist = document.getElementById("playlist");
+  const pdfViewer = document.getElementById("pdfViewer");
+
+  const canvas = document.getElementById("waveform");
+  const ctx = canvas.getContext("2d");
+
+  const customTooltip = document.getElementById("customTooltip");
+
+  // =========================
+  // STATE
+  // =========================
+  let currentTrackIndex = 0;
+  let currentSpeed = DEFAULT_SPEED;
+  let playMode = PLAY_MODES.ONCE;
+
+  let waveformData = [];
+  let loopA = null;
+  let loopB = null;
+  let draggingHandle = null;
+
+  let currentDecodeToken = 0;
+  const versionAvailabilityCache = new Map();
+
+  let holdSeekInterval = null;
+  let middlePlaybackAnchorTime = 0;
+  let middleRestartArmed = false;
+
+  let tooltipTarget = null;
+  let tooltipsEnabled = true;
+  let seenTooltipKeys = new Set();
+
+  let volumeHintHideTimer = null;
+
+  const hasIOSVolumeRestriction = detectIOSVolumeRestriction();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // =========================
+  // HELPERS
+  // =========================
+  function showError(message) {
+    statusMessage.textContent = message;
+    statusMessage.className = "statusMessage error";
+  }
+
+  function clearError() {
+    statusMessage.textContent = "";
+    statusMessage.className = "statusMessage";
+  }
+
+  function showVolumeIOSHint() {
+    if (volumeHintHideTimer) {
+      clearTimeout(volumeHintHideTimer);
+    }
+    volumeIosHint.classList.add("show");
+    volumeHintHideTimer = setTimeout(() => {
+      volumeIosHint.classList.remove("show");
+    }, 3500);
+  }
+
+  function formatTime(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getTrackVersions(id) {
+    const baseUrl = `https://kb-music.github.io/files/${id}`;
+    return {
+      pn: `${baseUrl}_PN.mp3`,
+      pv1: `${baseUrl}_V1.mp3`,
+      pv2: `${baseUrl}_V2.mp3`,
+      dt: `${baseUrl}_DT.mp3`,
+      main: `${baseUrl}_CL.mp3`
+    };
+  }
+
+  function getCurrentTrack() {
+    return tracks[currentTrackIndex];
+  }
+
+  function getTrackDurationSafe() {
+    return Number.isFinite(audio.duration) ? audio.duration : 0;
+  }
+
+  function getTrackDurationText(track) {
+    return track?.durationText || "--:--";
+  }
+
+  function getSafeCurrentTime() {
+    return Math.max(0, audio.currentTime || 0);
+  }
+
+  function isEditableTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName?.toLowerCase();
+    return (
+      tagName === "input" ||
+      tagName === "textarea" ||
+      tagName === "select" ||
+      target.isContentEditable
+    );
+  }
+
+  function isKeyInSet(key, variants) {
+    return variants.includes((key || "").toLowerCase());
+  }
+
+  function detectIOSVolumeRestriction() {
+    const ua = navigator.userAgent || navigator.vendor || "";
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function loadTooltipsEnabled() {
+    try {
+      const stored = localStorage.getItem(TOOLTIP_MODE_STORAGE_KEY);
+      if (stored === null) return true;
+      return stored === "true";
+    } catch {
+      return true;
+    }
+  }
+
+  function saveTooltipsEnabled() {
+    try {
+      localStorage.setItem(TOOLTIP_MODE_STORAGE_KEY, String(tooltipsEnabled));
+    } catch {}
+  }
+
+  function loadSeenTooltipKeys() {
+    try {
+      const raw = localStorage.getItem(TOOLTIP_SEEN_STORAGE_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+    } catch {
+      return new Set();
+    }
+  }
+
+  function saveSeenTooltipKeys() {
+    try {
+      localStorage.setItem(TOOLTIP_SEEN_STORAGE_KEY, JSON.stringify(Array.from(seenTooltipKeys)));
+    } catch {}
+  }
+
+  function getTooltipKey(target) {
+    return target?.dataset?.tooltipKey || "";
+  }
+
+  function rememberTooltipSeen(target) {
+    const key = getTooltipKey(target);
+    if (!key || seenTooltipKeys.has(key)) return;
+    seenTooltipKeys.add(key);
+    saveSeenTooltipKeys();
+  }
+
+  function syncTopPlayButtonVisual() {
+    const isPaused = audio.paused;
+    const symbol = isPaused ? "▶" : "⏸";
+    topPlayPause.textContent = symbol;
+    topPlayPause.classList.toggle("is-active", !isPaused);
+  }
+
+  function syncMiddlePlaybackButtonVisual() {
+    if (audio.paused) {
+      middlePlayPause.textContent = "▌▶";
+      middlePlayPause.classList.remove("is-active");
+      return;
+    }
+
+    if (!middleRestartArmed) {
+      middlePlayPause.textContent = "▌▶";
+      middlePlayPause.classList.add("is-active");
+    } else {
+      middlePlayPause.textContent = "■";
+      middlePlayPause.classList.add("is-active");
+    }
+  }
+
+  function syncAllPlayButtonsVisual() {
+    syncTopPlayButtonVisual();
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function forcePlayButtonsToStoppedState() {
+    syncAllPlayButtonsVisual();
+  }
+
+  function updatePlayModeUI() {
+    playModeText.textContent = PLAY_MODE_LABELS[playMode];
+    playModeButton.title = `Playback mode: ${PLAY_MODE_LABELS[playMode].replace(/\n/g, " ")}. Click to switch to the next mode.`;
+  }
+
+  function updateHeaderInfo() {
+    const track = getCurrentTrack();
+    albumTitleValue.textContent = ALBUM_NAME;
+    pieceTitleValue.textContent = track ? track.name : "No track";
+  }
+
+  function updateTimeDisplay() {
+    timeDisplay.textContent = formatTime(getSafeCurrentTime());
+  }
+
+  function updateVolumeUI() {
+    const volume = parseFloat(volumeSlider.value);
+    const percent = Math.round(volume * 100);
+    volumeLabel.textContent = `Volume: ${percent}%`;
+    volumeSlider.style.background = `linear-gradient(to right, var(--accent) ${percent}%, #ccc ${percent}%)`;
+  }
+
+  function updateSpeedUI() {
+    const percent = Math.round(currentSpeed * 100);
+    speedLabel.textContent = `Speed: ${percent}%`;
+
+    const centerPercent = 50;
+    let filledPercent;
+
+    if (currentSpeed >= 1) {
+      filledPercent = centerPercent + ((currentSpeed - 1) / (MAX_SPEED - 1)) * 50;
+      speedSlider.style.background = `linear-gradient(to right, #ccc ${centerPercent}%, var(--accent) ${centerPercent}%, var(--accent) ${filledPercent}%, #ccc ${filledPercent}%)`;
+    } else {
+      filledPercent = centerPercent - ((1 - currentSpeed) / (1 - MIN_SPEED)) * 50;
+      speedSlider.style.background = `linear-gradient(to right, #ccc ${filledPercent}%, var(--accent) ${filledPercent}%, var(--accent) ${centerPercent}%, #ccc ${centerPercent}%)`;
+    }
+  }
+
+  function updateLoopButtonsUI() {
+    loopAButton.classList.toggle("is-active", loopA !== null);
+    loopBButton.classList.toggle("is-active", loopB !== null);
+    loopCButton.classList.toggle("is-active", loopA === null && loopB === null);
+  }
+
+  function updateToggleButtonState(button, isOpen, openText, closedText) {
+    button.classList.toggle("is-active", isOpen);
+    button.textContent = isOpen ? openText : closedText;
+    button.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  function openCloseBlock(button, block, openText, closedText) {
+    const isOpen = block.classList.toggle("open");
+    updateToggleButtonState(button, isOpen, openText, closedText);
+  }
+
+  function toggleControlsBlock() {
+    const isOpen = advancedControlsBlock.classList.toggle("open");
+    updateToggleButtonState(toggleControlsBtn, isOpen, "HIDE PLAYBACK", "PLAYBACK");
+  }
+
+  function toggleHelpPanel() {
+    const isOpen = helpPanel.classList.toggle("open");
+    updateToggleButtonState(toggleHelpBtn, isOpen, "HIDE HELP", "HELP");
+  }
+
+  function updateTooltipControlUI() {
+    helpToggleTooltipsButton.textContent = tooltipsEnabled ? "TOOLTIPS: AUTO" : "TOOLTIPS: OFF";
+    helpToggleTooltipsButton.classList.toggle("is-active", !tooltipsEnabled);
+  }
+
+  function resizeCanvas() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const cssWidth = Math.max(300, Math.floor(canvas.clientWidth));
+    const cssHeight = WAVEFORM_HEIGHT;
+
+    canvas.style.height = `${cssHeight}px`;
+    canvas.width = Math.floor(cssWidth * devicePixelRatio);
+    canvas.height = Math.floor(cssHeight * devicePixelRatio);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    drawWaveform();
+  }
+
+  function clearWaveformState() {
+    waveformData = [];
+    drawWaveform();
+  }
+
+  function resetLoop() {
+    loopA = null;
+    loopB = null;
+    draggingHandle = null;
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function setSpeed(value) {
+    currentSpeed = clamp(parseFloat(value), MIN_SPEED, MAX_SPEED);
+    audio.playbackRate = currentSpeed;
+    speedSlider.value = currentSpeed;
+    updateSpeedUI();
+  }
+
+  function cyclePlayMode() {
+    if (playMode === PLAY_MODES.ONCE) {
+      playMode = PLAY_MODES.REPEAT_ONE;
+    } else if (playMode === PLAY_MODES.REPEAT_ONE) {
+      playMode = PLAY_MODES.FULL_ALBUM;
+    } else {
+      playMode = PLAY_MODES.ONCE;
+    }
+    updatePlayModeUI();
+  }
+
+  function setCurrentTimeSafely(value) {
+    const duration = getTrackDurationSafe();
+    if (!duration) {
+      audio.currentTime = Math.max(0, value);
+      updateTimeDisplay();
+      drawWaveform();
+      return;
+    }
+    audio.currentTime = clamp(value, 0, duration);
+    updateTimeDisplay();
+    drawWaveform();
+  }
+
+  function setCurrentTimeByUser(value) {
+    setCurrentTimeSafely(value);
+    middlePlaybackAnchorTime = getSafeCurrentTime();
+    middleRestartArmed = false;
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function preloadNextTrack() {
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    const nextTrack = tracks[nextIndex];
+    if (!nextTrack?.url) return;
+
+    let preloadLink = document.getElementById("preloadNextTrack");
+    if (!preloadLink) {
+      preloadLink = document.createElement("link");
+      preloadLink.id = "preloadNextTrack";
+      preloadLink.rel = "preload";
+      preloadLink.as = "audio";
+      document.head.appendChild(preloadLink);
+    }
+    preloadLink.href = nextTrack.url;
+  }
+
+  function togglePlayPause() {
+    if (audio.paused) {
+      audio.play().catch((error) => {
+        console.error("Playback failed:", error);
+      });
+    } else {
+      audio.pause();
+    }
+  }
+
+  function toggleMiddlePlaybackStartStop() {
+    if (audio.paused) {
+      const duration = getTrackDurationSafe();
+      const targetTime = duration
+        ? clamp(middlePlaybackAnchorTime, 0, duration)
+        : Math.max(0, middlePlaybackAnchorTime);
+
+      setCurrentTimeSafely(targetTime);
+      middleRestartArmed = false;
+
+      audio.play().catch((error) => {
+        console.error("Playback failed:", error);
+      });
+      return;
+    }
+
+    if (!middleRestartArmed) {
+      setCurrentTimeSafely(middlePlaybackAnchorTime);
+      middleRestartArmed = true;
+      syncMiddlePlaybackButtonVisual();
+      return;
+    }
+
+    audio.pause();
+    setCurrentTimeSafely(middlePlaybackAnchorTime);
+    middleRestartArmed = false;
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function seekBy(delta) {
+    setCurrentTimeByUser(getSafeCurrentTime() + delta);
+  }
+
+  function startHoldSeek(delta) {
+    stopHoldSeek();
+    seekBy(delta);
+    holdSeekInterval = setInterval(() => {
+      seekBy(delta);
+    }, HOLD_SEEK_INTERVAL_MS);
+  }
+
+  function stopHoldSeek() {
+    if (holdSeekInterval) {
+      clearInterval(holdSeekInterval);
+      holdSeekInterval = null;
+    }
+  }
+
+  function blurActiveSlider() {
+    const active = document.activeElement;
+    if (active && active.matches && active.matches('input[type="range"]')) {
+      active.blur();
+    }
+  }
+
+  function setTooltipsEnabled(enabled) {
+    tooltipsEnabled = enabled;
+    saveTooltipsEnabled();
+    updateTooltipControlUI();
+
+    if (!tooltipsEnabled) {
+      hideCustomTooltip();
+    }
+  }
+
+  function toggleTooltipsEnabled() {
+    setTooltipsEnabled(!tooltipsEnabled);
+  }
+
+  function handleIOSVolumeAttempt() {
+    volumeSlider.value = DEFAULT_VOLUME;
+    updateVolumeUI();
+    showVolumeIOSHint();
+  }
+
+  function getClientXFromEvent(event) {
+    if (event.touches && event.touches.length) return event.touches[0].clientX;
+    if (event.changedTouches && event.changedTouches.length) return event.changedTouches[0].clientX;
+    return event.clientX;
+  }
+
+  function getCanvasXFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = getClientXFromEvent(event);
+    return clamp(clientX - rect.left, 0, rect.width);
+  }
+
+  function getHandleAtX(x, duration, width) {
+    if (!duration) return null;
+
+    const aX = loopA !== null ? (loopA / duration) * width : null;
+    const bX = loopB !== null ? (loopB / duration) * width : null;
+
+    if (aX !== null && Math.abs(x - aX) <= LOOP_HANDLE_HITBOX_PX) return "A";
+    if (bX !== null && Math.abs(x - bX) <= LOOP_HANDLE_HITBOX_PX) return "B";
+    return null;
+  }
+
+  // =========================
+  // CUSTOM TOOLTIPS
+  // =========================
+  function hideCustomTooltip() {
+    customTooltip.classList.remove("show");
+    customTooltip.setAttribute("aria-hidden", "true");
+    tooltipTarget = null;
+  }
+
+  function positionCustomTooltip(target) {
+    if (!target || customTooltip.getAttribute("aria-hidden") === "true") return;
+
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = customTooltip.getBoundingClientRect();
+
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    let top = rect.top - tooltipRect.height - 12;
+
+    const minLeft = 8;
+    const maxLeft = window.innerWidth - tooltipRect.width - 8;
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+
+    if (top < 8) {
+      top = rect.bottom + 12;
+    }
+
+    const maxTop = window.innerHeight - tooltipRect.height - 8;
+    top = Math.max(8, Math.min(top, maxTop));
+
+    customTooltip.style.left = `${left}px`;
+    customTooltip.style.top = `${top}px`;
+  }
+
+  function showCustomTooltip(target) {
+    if (!tooltipsEnabled) return;
+
+    const text = target.getAttribute("data-tooltip");
+    if (!text) return;
+
+    const tooltipKey = getTooltipKey(target);
+    if (tooltipKey && seenTooltipKeys.has(tooltipKey)) return;
+
+    tooltipTarget = target;
+    customTooltip.textContent = text;
+    customTooltip.classList.add("show");
+    customTooltip.setAttribute("aria-hidden", "false");
+    positionCustomTooltip(target);
+    rememberTooltipSeen(target);
+  }
+
+  function initCustomTooltips() {
+    const tooltipElements = document.querySelectorAll("[title]");
+
+    tooltipElements.forEach((element, index) => {
+      const titleText = element.getAttribute("title");
+      if (!titleText) return;
+
+      element.setAttribute("data-tooltip", titleText);
+
+      let tooltipKey = "";
+      if (element.id) {
+        tooltipKey = `id:${element.id}`;
+      } else if (element.dataset.type) {
+        tooltipKey = `type:${element.dataset.type}`;
+      } else if (element.getAttribute("href")) {
+        tooltipKey = `href:${element.getAttribute("href")}`;
+      } else {
+        tooltipKey = `auto:${index}:${titleText.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40)}`;
+      }
+
+      element.setAttribute("data-tooltip-key", tooltipKey);
+      element.removeAttribute("title");
+
+      element.addEventListener("mouseenter", () => showCustomTooltip(element));
+      element.addEventListener("mouseleave", hideCustomTooltip);
+      element.addEventListener("focus", () => showCustomTooltip(element));
+      element.addEventListener("blur", hideCustomTooltip);
+
+      element.addEventListener("mousemove", () => {
+        if (tooltipTarget === element && tooltipsEnabled) {
+          positionCustomTooltip(element);
+        }
+      });
+    });
+
+    window.addEventListener("scroll", () => {
+      if (tooltipTarget && tooltipsEnabled) positionCustomTooltip(tooltipTarget);
+    }, true);
+
+    window.addEventListener("resize", () => {
+      if (tooltipTarget && tooltipsEnabled) positionCustomTooltip(tooltipTarget);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        hideCustomTooltip();
+      }
+    });
+  }
+
+  // =========================
+  // WAVEFORM
+  // =========================
+  function drawTriangleHandle(x, color, height) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x - LOOP_HANDLE_TRIANGLE_HALF_WIDTH, LOOP_HANDLE_TRIANGLE_HEIGHT);
+    ctx.lineTo(x + LOOP_HANDLE_TRIANGLE_HALF_WIDTH, LOOP_HANDLE_TRIANGLE_HEIGHT);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, height - LOOP_HANDLE_RADIUS - 2, LOOP_HANDLE_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawWaveform() {
+    const width = canvas.clientWidth;
+    const height = WAVEFORM_HEIGHT;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!waveformData.length) return;
+
+    const mid = height / 2;
+    const step = Math.max(1, Math.floor(waveformData.length / width));
+
+    ctx.fillStyle = "#3399ff";
+    for (let x = 0; x < width; x++) {
+      let min = 1;
+      let max = -1;
+
+      for (let i = 0; i < step; i++) {
+        const sample = waveformData[(x * step) + i] || 0;
+        if (sample < min) min = sample;
+        if (sample > max) max = sample;
+      }
+
+      ctx.fillRect(x, mid + (min * mid), 1, Math.max(1, (max - min) * mid));
+    }
+
+    const duration = getTrackDurationSafe();
+
+    if (duration) {
+      const playX = (getSafeCurrentTime() / duration) * width;
+      ctx.fillStyle = "rgba(51,153,255,0.25)";
+      ctx.fillRect(0, 0, playX, height);
+    }
+
+    if (loopA !== null && loopB !== null && duration) {
+      const x1 = (loopA / duration) * width;
+      const x2 = (loopB / duration) * width;
+      ctx.fillStyle = "rgba(255,190,40,0.28)";
+      ctx.fillRect(x1, 0, x2 - x1, height);
+    }
+
+    if (loopA !== null && duration) {
+      const xA = (loopA / duration) * width;
+      ctx.fillStyle = "#00c853";
+      ctx.fillRect(xA - Math.floor(LOOP_LINE_WIDTH / 2), 0, LOOP_LINE_WIDTH, height);
+      drawTriangleHandle(xA, "#00c853", height);
+    }
+
+    if (loopB !== null && duration) {
+      const xB = (loopB / duration) * width;
+      ctx.fillStyle = "#ff9800";
+      ctx.fillRect(xB - Math.floor(LOOP_LINE_WIDTH / 2), 0, LOOP_LINE_WIDTH, height);
+      drawTriangleHandle(xB, "#ff9800", height);
+    }
+
+    if (duration) {
+      const currentX = (getSafeCurrentTime() / duration) * width;
+      ctx.fillStyle = "red";
+      ctx.fillRect(currentX, 0, 2, height);
+    }
+  }
+
+  async function decodeWaveform(url) {
+    clearError();
+    const decodeToken = ++currentDecodeToken;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Audio file request failed with status ${response.status}`);
+      }
+
+      const buffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(buffer.slice(0));
+
+      if (decodeToken !== currentDecodeToken) return;
+
+      waveformData = Array.from(audioBuffer.getChannelData(0));
+      drawWaveform();
+    } catch (error) {
+      if (decodeToken !== currentDecodeToken) return;
+
+      waveformData = [];
+      drawWaveform();
+      showError("Could not load waveform for this audio file.");
+      console.error("Waveform decode error:", error);
+    }
+  }
+
+  // =========================
+  // VERSION CHECKING
+  // =========================
+  async function requestExistsWithFallback(url) {
+    try {
+      const headResponse = await fetch(url, { method: "HEAD" });
+
+      if (headResponse.ok) return true;
+
+      if ([400, 403, 405, 406, 501].includes(headResponse.status)) {
+        const getResponse = await fetch(url, {
+          method: "GET",
+          headers: { Range: "bytes=0-0" }
+        });
+        return getResponse.ok || getResponse.status === 206;
+      }
+
+      return false;
+    } catch (error) {
+      try {
+        const fallbackResponse = await fetch(url, {
+          method: "GET",
+          headers: { Range: "bytes=0-0" }
+        });
+        return fallbackResponse.ok || fallbackResponse.status === 206;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  async function checkFileExists(url) {
+    if (versionAvailabilityCache.has(url)) {
+      return versionAvailabilityCache.get(url);
+    }
+
+    const exists = await requestExistsWithFallback(url);
+    versionAvailabilityCache.set(url, exists);
+    return exists;
+  }
+
+  async function updateVersionButtons() {
+    const track = getCurrentTrack();
+    if (!track) return;
+
+    const versions = getTrackVersions(track.id);
+    const buttons = Array.from(document.querySelectorAll("#trackVersions .versionButton"));
+
+    await Promise.all(
+      buttons.map(async (button) => {
+        const type = button.dataset.type;
+        const url = versions[type];
+
+        button.classList.remove("disabled");
+
+        if (!url) {
+          button.classList.add("disabled");
+          return;
+        }
+
+        const exists = await checkFileExists(url);
+        if (!exists) {
+          button.classList.add("disabled");
+        }
+      })
+    );
+  }
+
+  function setActiveVersion(type) {
+    document.querySelectorAll("#trackVersions .versionButton").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.type === type);
+    });
+  }
+
+  async function switchVersion(type) {
+    const currentTrack = getCurrentTrack();
+    if (!currentTrack) return;
+
+    const versions = getTrackVersions(currentTrack.id);
+    const newUrl = versions[type];
+
+    if (!newUrl) return;
+
+    const exists = await checkFileExists(newUrl);
+    if (!exists) {
+      showError("This audio version is not available.");
+      return;
+    }
+
+    clearError();
+
+    const currentTimeBeforeSwitch = getSafeCurrentTime();
+    const wasPlaying = !audio.paused;
+
+    middlePlaybackAnchorTime = currentTimeBeforeSwitch;
+    middleRestartArmed = false;
+
+    audio.src = newUrl;
+    audio.dataset.base = currentTrack.id;
+    audio.dataset.version = type;
+    pdfViewer.src = currentTrack.pdf;
+
+    setActiveVersion(type);
+
+    audio.addEventListener("loadedmetadata", () => {
+      const duration = getTrackDurationSafe();
+      audio.currentTime = clamp(currentTimeBeforeSwitch, 0, duration || 0);
+      middlePlaybackAnchorTime = clamp(middlePlaybackAnchorTime, 0, duration || 0);
+      middleRestartArmed = false;
+      audio.playbackRate = currentSpeed;
+      updateHeaderInfo();
+      updateTimeDisplay();
+      drawWaveform();
+
+      if (wasPlaying) {
+        audio.play().catch((error) => {
+          console.error("Playback after version switch was blocked:", error);
+        });
+      } else {
+        forcePlayButtonsToStoppedState();
+      }
+    }, { once:true });
+
+    decodeWaveform(newUrl);
+  }
+
+  // =========================
+  // PLAYLIST
+  // =========================
+  function updatePlaylist() {
+    playlist.innerHTML = "";
+
+    tracks.forEach((track, index) => {
+      const li = document.createElement("li");
+      li.className = "playlistItem";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "trackButton";
+      button.textContent = `${track.name}, Duration: ${getTrackDurationText(track)}`;
+
+      button.classList.toggle("current", index === currentTrackIndex);
+      button.classList.toggle("is-active", index === currentTrackIndex);
+
+      button.addEventListener("click", () => {
+        loadTrack(index, { autoplay: false, resetToMainVersion: true });
+      });
+
+      li.appendChild(button);
+      playlist.appendChild(li);
+    });
+  }
+
+  // =========================
+  // TRACK LOADING
+  // =========================
+  function applyTrackUI(track) {
+    pdfViewer.src = track.pdf;
+    updateHeaderInfo();
+    updatePlaylist();
+  }
+
+  function resetStateForNewTrack() {
+    resetLoop();
+    clearWaveformState();
+    clearError();
+    setSpeed(DEFAULT_SPEED);
+    stopHoldSeek();
+    middlePlaybackAnchorTime = 0;
+    middleRestartArmed = false;
+  }
+
+  function loadTrack(index, options = {}) {
+    const {
+      autoplay = false,
+      resetToMainVersion = true
+    } = options;
+
+    currentTrackIndex = index;
+    const track = getCurrentTrack();
+
+    audio.pause();
+    forcePlayButtonsToStoppedState();
+
+    resetStateForNewTrack();
+
+    const versionType = resetToMainVersion ? "main" : (audio.dataset.version || "main");
+    const versions = getTrackVersions(track.id);
+    const trackUrl = versions[versionType] || track.url;
+
+    audio.src = trackUrl;
+    audio.dataset.base = track.id;
+    audio.dataset.version = versionType;
+
+    applyTrackUI(track);
+    setActiveVersion(versionType);
+    updateVersionButtons();
+    decodeWaveform(trackUrl);
+    preloadNextTrack();
+
+    if (autoplay) {
+      audio.play().catch((error) => {
+        console.error("Autoplay was blocked:", error);
+      });
+    }
+  }
+
+  function loadNextTrack(options = {}) {
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    loadTrack(nextIndex, {
+      autoplay: Boolean(options.autoplay),
+      resetToMainVersion: true
+    });
+  }
+
+  // =========================
+  // LOOP
+  // =========================
+  function setLoopA() {
+    if (loopB !== null && getSafeCurrentTime() > loopB) return;
+    loopA = getSafeCurrentTime();
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function setLoopB() {
+    if (loopA !== null && getSafeCurrentTime() < loopA) return;
+    loopB = getSafeCurrentTime();
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function updateDraggedLoopHandleFromX(x, duration, width) {
+    let time = (x / width) * duration;
+
+    if (draggingHandle === "A") {
+      if (loopB !== null && time > loopB) time = loopB;
+      loopA = clamp(time, 0, duration);
+    } else if (draggingHandle === "B") {
+      if (loopA !== null && time < loopA) time = loopA;
+      loopB = clamp(time, 0, duration);
+    }
+
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  // =========================
+  // EVENTS
+  // =========================
+  topPlayPause.addEventListener("click", togglePlayPause);
+  middlePlayPause.addEventListener("click", toggleMiddlePlaybackStartStop);
+  playModeButton.addEventListener("click", cyclePlayMode);
+
+  toggleVersionsBtn.addEventListener("click", () => {
+    openCloseBlock(toggleVersionsBtn, trackVersionsBlock, "HIDE VERSIONS", "VERSIONS");
+  });
+
+  toggleControlsBtn.addEventListener("click", toggleControlsBlock);
+  toggleHelpBtn.addEventListener("click", toggleHelpPanel);
+  helpToggleTooltipsButton.addEventListener("click", toggleTooltipsEnabled);
+
+  document.querySelectorAll("#trackVersions .versionButton").forEach((button) => {
+    button.addEventListener("click", () => switchVersion(button.dataset.type));
+  });
+
+  speedMinusButton.addEventListener("click", () => setSpeed(currentSpeed - SPEED_STEP));
+  speedPlusButton.addEventListener("click", () => setSpeed(currentSpeed + SPEED_STEP));
+  speedResetButton.addEventListener("click", () => setSpeed(DEFAULT_SPEED));
+
+  loopAButton.addEventListener("click", setLoopA);
+  loopBButton.addEventListener("click", setLoopB);
+  loopCButton.addEventListener("click", resetLoop);
+
+  speedSlider.addEventListener("input", () => {
+    setSpeed(speedSlider.value);
+  });
+
+  speedSlider.addEventListener("change", blurActiveSlider);
+  speedSlider.addEventListener("mouseup", blurActiveSlider);
+  speedSlider.addEventListener("touchend", blurActiveSlider);
+
+  volumeSlider.addEventListener("input", () => {
+    if (hasIOSVolumeRestriction) {
+      handleIOSVolumeAttempt();
+      return;
+    }
+
+    audio.volume = parseFloat(volumeSlider.value);
+    updateVolumeUI();
+  });
+
+  volumeSlider.addEventListener("change", blurActiveSlider);
+  volumeSlider.addEventListener("mouseup", blurActiveSlider);
+  volumeSlider.addEventListener("touchend", blurActiveSlider);
+
+  function bindHoldSeek(button, delta) {
+    button.addEventListener("mousedown", () => startHoldSeek(delta));
+    button.addEventListener("mouseup", stopHoldSeek);
+    button.addEventListener("mouseleave", stopHoldSeek);
+    button.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      startHoldSeek(delta);
+    }, { passive:false });
+    button.addEventListener("touchend", stopHoldSeek);
+    button.addEventListener("touchcancel", stopHoldSeek);
+  }
+
+  function bindSliderHotkeyOverride(slider) {
+    slider.addEventListener("keydown", (event) => {
+      const key = (event.key || "").toLowerCase();
+
+      switch (key) {
+        case " ":
+          event.preventDefault();
+          togglePlayPause();
+          blurActiveSlider();
+          break;
+
+        case "arrowright":
+          event.preventDefault();
+          seekBy(SEEK_STEP_SECONDS);
+          break;
+
+        case "arrowleft":
+          event.preventDefault();
+          seekBy(-SEEK_STEP_SECONDS);
+          break;
+
+        case "arrowup":
+          event.preventDefault();
+          setSpeed(currentSpeed + SPEED_STEP);
+          break;
+
+        case "arrowdown":
+          event.preventDefault();
+          setSpeed(currentSpeed - SPEED_STEP);
+          break;
+
+        case "r":
+        case "к":
+          event.preventDefault();
+          setSpeed(DEFAULT_SPEED);
+          blurActiveSlider();
+          break;
+
+        case "s":
+        case "ы":
+          event.preventDefault();
+          toggleMiddlePlaybackStartStop();
+          blurActiveSlider();
+          break;
+
+        case "t":
+        case "е":
+          event.preventDefault();
+          toggleTooltipsEnabled();
+          blurActiveSlider();
+          break;
+
+        case "i":
+        case "ш":
+          event.preventDefault();
+          toggleHelpPanel();
+          blurActiveSlider();
+          break;
+
+        default:
+          if (isKeyInSet(key, ["a", "ф"])) {
+            event.preventDefault();
+            setLoopA();
+            blurActiveSlider();
+          } else if (isKeyInSet(key, ["b", "и"])) {
+            event.preventDefault();
+            setLoopB();
+            blurActiveSlider();
+          } else if (isKeyInSet(key, ["c", "с"])) {
+            event.preventDefault();
+            resetLoop();
+            blurActiveSlider();
+          }
+          break;
+      }
+    });
+  }
+
+  bindHoldSeek(seekBackButton, -SEEK_STEP_SECONDS);
+  bindHoldSeek(seekForwardButton, SEEK_STEP_SECONDS);
+
+  bindSliderHotkeyOverride(volumeSlider);
+  bindSliderHotkeyOverride(speedSlider);
+
+  function blurButtonAfterPointerUse(button) {
+    const blurIfActive = () => {
+      if (document.activeElement === button) {
+        button.blur();
+      }
+    };
+
+    button.addEventListener("mouseup", blurIfActive);
+    button.addEventListener("mouseleave", blurIfActive);
+    button.addEventListener("touchend", blurIfActive);
+    button.addEventListener("touchcancel", blurIfActive);
+  }
+
+  [
+    topPlayPause,
+    middlePlayPause,
+    playModeButton,
+    toggleVersionsBtn,
+    toggleControlsBtn,
+    toggleHelpBtn,
+    helpToggleTooltipsButton,
+    seekBackButton,
+    seekForwardButton,
+    speedMinusButton,
+    speedPlusButton,
+    speedResetButton,
+    loopAButton,
+    loopBButton,
+    loopCButton,
+    ...document.querySelectorAll("#trackVersions .versionButton")
+  ].forEach(blurButtonAfterPointerUse);
+
+  audio.addEventListener("play", () => {
+    syncAllPlayButtonsVisual();
+  });
+
+  audio.addEventListener("pause", () => {
+    middleRestartArmed = false;
+    syncAllPlayButtonsVisual();
+  });
+
+  audio.addEventListener("loadedmetadata", () => {
+    updateHeaderInfo();
+    updateTimeDisplay();
+    updatePlaylist();
+    drawWaveform();
+    middleRestartArmed = false;
+    syncAllPlayButtonsVisual();
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    updateTimeDisplay();
+    drawWaveform();
+
+    if (loopA !== null && loopB !== null && getSafeCurrentTime() >= loopB) {
+      setCurrentTimeSafely(loopA);
+    }
+  });
+
+  audio.addEventListener("ended", () => {
+    stopHoldSeek();
+    resetLoop();
+    middleRestartArmed = false;
+
+    if (playMode === PLAY_MODES.FULL_ALBUM) {
+      middlePlaybackAnchorTime = 0;
+      loadNextTrack({ autoplay: true });
+      return;
+    }
+
+    if (playMode === PLAY_MODES.REPEAT_ONE) {
+      middlePlaybackAnchorTime = 0;
+      setCurrentTimeSafely(0);
+      audio.play().catch((error) => {
+        console.error("Repeat playback failed:", error);
+      });
+      return;
+    }
+
+    middlePlaybackAnchorTime = 0;
+    loadNextTrack({ autoplay: false });
+    forcePlayButtonsToStoppedState();
+  });
+
+  audio.addEventListener("error", () => {
+    showError("Could not load the selected audio file.");
+    forcePlayButtonsToStoppedState();
+  });
+
+  function handleCanvasPointerDown(event) {
+    const duration = getTrackDurationSafe();
+    if (!duration) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = getCanvasXFromEvent(event);
+    const clickedTime = (x / rect.width) * duration;
+    const handle = getHandleAtX(x, duration, rect.width);
+
+    if (handle) {
+      draggingHandle = handle;
+      if (event.cancelable) event.preventDefault();
+      return;
+    }
+
+    setCurrentTimeByUser(clickedTime);
+    if (event.cancelable) event.preventDefault();
+  }
+
+  function handleCanvasPointerMove(event) {
+    const duration = getTrackDurationSafe();
+    if (!draggingHandle || !duration) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = getCanvasXFromEvent(event);
+    updateDraggedLoopHandleFromX(x, duration, rect.width);
+
+    if (event.cancelable) event.preventDefault();
+  }
+
+  function stopDraggingLoopHandle() {
+    draggingHandle = null;
+  }
+
+  canvas.addEventListener("mousedown", handleCanvasPointerDown);
+  canvas.addEventListener("mousemove", handleCanvasPointerMove);
+  canvas.addEventListener("mouseup", stopDraggingLoopHandle);
+  canvas.addEventListener("mouseleave", stopDraggingLoopHandle);
+
+  canvas.addEventListener("touchstart", handleCanvasPointerDown, { passive:false });
+  canvas.addEventListener("touchmove", handleCanvasPointerMove, { passive:false });
+  canvas.addEventListener("touchend", stopDraggingLoopHandle, { passive:false });
+  canvas.addEventListener("touchcancel", stopDraggingLoopHandle, { passive:false });
+
+  document.addEventListener("mouseup", stopHoldSeek);
+  document.addEventListener("touchend", stopHoldSeek);
+  document.addEventListener("touchcancel", stopHoldSeek);
+
+  document.addEventListener("keydown", (event) => {
+    if (isEditableTarget(event.target)) return;
+
+    const key = (event.key || "").toLowerCase();
+
+    const shouldPreventDefault = [
+      " ",
+      "arrowleft",
+      "arrowright",
+      "arrowup",
+      "arrowdown"
+    ].includes(key);
+
+    if (shouldPreventDefault) {
+      event.preventDefault();
+    }
+
+    switch (key) {
+      case " ":
+        togglePlayPause();
+        break;
+
+      case "arrowright":
+        seekBy(SEEK_STEP_SECONDS);
+        break;
+
+      case "arrowleft":
+        seekBy(-SEEK_STEP_SECONDS);
+        break;
+
+      case "arrowup":
+        setSpeed(currentSpeed + SPEED_STEP);
+        break;
+
+      case "arrowdown":
+        setSpeed(currentSpeed - SPEED_STEP);
+        break;
+
+      case "r":
+      case "к":
+        setSpeed(DEFAULT_SPEED);
+        break;
+
+      case "s":
+      case "ы":
+        toggleMiddlePlaybackStartStop();
+        break;
+
+      case "t":
+      case "е":
+        toggleTooltipsEnabled();
+        break;
+
+      case "i":
+      case "ш":
+        toggleHelpPanel();
+        break;
+
+      default:
+        if (isKeyInSet(key, ["a", "ф"])) {
+          setLoopA();
+        } else if (isKeyInSet(key, ["b", "и"])) {
+          setLoopB();
+        } else if (isKeyInSet(key, ["c", "с"])) {
+          resetLoop();
+        }
+        break;
+    }
+  });
+
+  window.addEventListener("resize", resizeCanvas);
+
+  // =========================
+  // INIT
+  // =========================
+  function init() {
+    seenTooltipKeys = loadSeenTooltipKeys();
+    tooltipsEnabled = loadTooltipsEnabled();
+
+    initCustomTooltips();
+
+    albumTitleValue.textContent = ALBUM_NAME;
+
+    audio.volume = DEFAULT_VOLUME;
+    volumeSlider.value = DEFAULT_VOLUME;
+    updateVolumeUI();
+
+    setSpeed(DEFAULT_SPEED);
+    updatePlayModeUI();
+    syncAllPlayButtonsVisual();
+    updateLoopButtonsUI();
+    updateTooltipControlUI();
+
+    updateToggleButtonState(toggleVersionsBtn, false, "HIDE VERSIONS", "VERSIONS");
+    updateToggleButtonState(toggleControlsBtn, false, "HIDE PLAYBACK", "PLAYBACK");
+    updateToggleButtonState(toggleHelpBtn, false, "HIDE HELP", "HELP");
+
+    resizeCanvas();
+    loadTrack(0, { autoplay: false, resetToMainVersion: true });
+  }
+
+  init();
+</script>
+</body>
+</html>
