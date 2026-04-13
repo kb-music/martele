@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Practice Player v11.3</title>
+
+<style>
+  :root{
+    --accent:#3399ff;
+    --accent-dark:#1f7fe0;
+    --bg:#f2f4f7;
+    --panel:#ffffff;
+    --border:#cfd8e3;
+    --text:#1f1f1f;
+    --muted:#666;
+    --shadow:0 8px 18px rgba(0,0,0,0.18), 0 3px 8px rgba(0,0,0,0.12);
+    --shadow-pressed:0 2px 5px rgba(0,0,0,0.14);
+    --radius:10px;
+    --wave-height:100px;
+
+    --loop-a:#00c853;
+    --loop-b:#ff9800;
+    --loop-c:#ff1744;
+
+    /* CHANGED-4: unified tiny UI sizing */
+    --content-width:1040px;
+    --ui-gap:6px;
+    --ui-pad:8px;
+    --ui-pad-tight:6px;
+    --ui-btn-h:44px;
+    /* CHANGED-0413-2: slightly larger advanced playback controls */
+    --ui-btn-h-small:40px;
+    --ui-font:13px;
+    --ui-font-small:12px;
+    --pdf-gap:12px;
+
+    /* CHANGED-4: wider gaps inside compact button groups */
+    --control-gap:8px;
+    --control-gap-score:16px;
+
+    /* CHANGED-4: A4 portrait ratio */
+    --a4-ratio:1 / 1.4142;
+  }
+
+  *{box-sizing:border-box;}
+
+  html{
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar{
+    width:0;
+    height:0;
+    display:none;
+  }
+
+  body{
+    margin:0;
+    padding:10px;
+    font-family:Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .page{
+    max-width:1160px;
+    margin:0 auto;
+  }
+
+  /* CHANGED-3: common outer blue frame around the whole player */
+  .playerShell{
+    border:2px solid var(--accent);
+    border-radius:16px;
+    padding:8px;
+    background:rgba(255,255,255,0.55);
+    box-shadow:0 6px 16px rgba(51,153,255,0.10);
+  }
+
+  .box{
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    background:var(--panel);
+    padding:8px;
+    margin-bottom:8px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .statusMessage{
+    display:none;
+    margin-top:8px;
+    padding:10px 12px;
+    border-radius:6px;
+    font-weight:bold;
+    line-height:1.35;
+  }
+
+  .statusMessage.error{
+    display:block;
+    background:#ffe7e7;
+    color:#9c1f1f;
+    border:1px solid #f0b5b5;
+  }
+
+  /* CHANGED-0413-1: unified layout widths after removing score/list toggle modes */
+  .layoutWidth,
+  .headerRow,
+  .pieceHeaderDesktop,
+  #trackVersions,
+  #advancedControls,
+  #printControls,
+  .sliderDualRow,
+  .waveRow,
+  #waveformContainer,
+  #helpPanel,
+  .mainColumns{
+    max-width:var(--content-width);
+    margin-left:auto;
+    margin-right:auto;
+    width:100%;
+  }
+
+  /* CHANGED-1: top header row 15% / 70% / 15% */
+  .headerRow{
+    display:grid;
+    grid-template-columns:15% 70% 15%;
+    gap:var(--ui-gap);
+    align-items:stretch;
+    margin-bottom:8px;
+  }
+
+  /* CHANGED-1: piece row 15% / 70% / 15% */
+  .pieceHeaderDesktop{
+    display:grid;
+    grid-template-columns:15% 70% 15%;
+    gap:var(--ui-gap);
+    align-items:stretch;
+    margin-top:8px;
+    margin-bottom:10px;
+  }
+
+  .toolbarButton,
+  .navLinkButton,
+  .headerButton,
+  .pieceNavButton,
+  .togglePanelButton,
+  .mobilePlaybackButton{
+    min-width:0;
+    min-height:var(--ui-btn-h);
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:bold;
+    font-size:var(--ui-font);
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    text-decoration:none;
+    padding:6px 8px;
+    white-space:normal;
+    appearance:none;
+    -webkit-appearance:none;
+    line-height:1.15;
+  }
+
+  .toolbarButton:hover,
+  .navLinkButton:hover,
+  .headerButton:hover,
+  .pieceNavButton:hover,
+  .togglePanelButton:hover,
+  .mobilePlaybackButton:hover,
+  .smallControl:hover,
+  .helpActionButton:hover,
+  .versionButton:hover{
+    background:var(--accent-dark);
+    box-shadow:0 10px 20px rgba(0,0,0,0.20), 0 4px 10px rgba(0,0,0,0.14);
+  }
+
+  .toolbarButton:focus-visible,
+  .navLinkButton:focus-visible,
+  .headerButton:focus-visible,
+  .pieceNavButton:focus-visible,
+  .togglePanelButton:focus-visible,
+  .mobilePlaybackButton:focus-visible,
+  .smallControl:focus-visible,
+  .helpActionButton:focus-visible,
+  .versionButton:focus-visible,
+  input[type=range]:focus-visible{
+    outline:3px solid rgba(51,153,255,0.35);
+    outline-offset:2px;
+  }
+
+  .toolbarButton.is-active,
+  .versionButton.is-active,
+  .smallControl.is-active,
+  .helpActionButton.is-active,
+  .headerButton.is-active,
+  .pieceNavButton.is-active,
+  .togglePanelButton.is-active,
+  .mobilePlaybackButton.is-active{
+    box-shadow:var(--shadow-pressed);
+    transform:translateY(1px);
+  }
+
+  /* CHANGED-1: unified info panel height to match button rows */
+  .infoPanel{
+    min-height:var(--ui-btn-h);
+    min-width:0;
+    border:1px solid var(--accent);
+    border-radius:var(--radius);
+    background:linear-gradient(180deg, #3ea2ff 0%, #2e92ef 100%);
+    padding:6px 10px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+  }
+
+  .infoLine{
+    font-size:18px;
+    font-weight:bold;
+    text-align:center;
+    line-height:1.2;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
+  .infoLabel{
+    color:#000;
+  }
+
+  .infoValue{
+    color:#fff;
+  }
+
+  .singleInfoLine{
+    font-size:18px;
+    font-weight:bold;
+    text-align:center;
+    line-height:1.2;
+    color:#fff;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
+  .infoPrefix{
+    color:#000;
+  }
+
+  .infoPrefixBreak{
+    display:inline;
+  }
+
+  /* CHANGED-0413-1: extra rows now live under their matching trigger rows */
+  #trackVersions,
+  #advancedControls,
+  #printControls{
+    display:none;
+    gap:var(--ui-gap);
+    margin-top:8px;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  #trackVersions.open,
+  #advancedControls.open,
+  #printControls.open{
+    display:flex;
+  }
+
+  .versionWrap{
+    flex:1 1 0;
+    min-width:0;
+  }
+
+  .versionButton{
+    width:100%;
+    min-height:46px;
+    padding:4px 6px;
+    border:2px solid var(--accent);
+    border-radius:6px;
+    background:#fff;
+    color:var(--accent);
+    font-weight:bold;
+    font-size:15px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    line-height:1.15;
+    white-space:normal;
+    text-align:center;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .versionButton.is-active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+
+  .versionButton.disabled{
+    background:#eee;
+    color:#777;
+    border-color:#ccc;
+    box-shadow:none;
+    cursor:default;
+    pointer-events:none;
+  }
+
+  /* CHANGED-2: playback control row redesigned */
+  .controlsStrip{
+    display:flex;
+    flex-wrap:nowrap;
+    align-items:center;
+    gap:var(--ui-gap);
+    width:100%;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+
+  .controlGroup{
+    display:flex;
+    flex-wrap:nowrap;
+    align-items:center;
+    gap:var(--control-gap);
+    min-width:0;
+    flex:0 0 auto;
+  }
+
+  .smallControl{
+    flex:0 0 auto;
+    min-width:var(--ui-btn-h-small);
+    width:var(--ui-btn-h-small);
+    height:var(--ui-btn-h-small);
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    /* CHANGED-0413-2: slightly larger icon size */
+    font-size:22px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+    padding:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
+
+  .smallControl.textControl{
+    min-width:76px;
+    width:auto;
+    font-size:12px;
+    letter-spacing:0.1px;
+    padding:0 8px;
+  }
+
+  .smallControl.iconWide{
+    min-width:var(--ui-btn-h-small);
+    width:var(--ui-btn-h-small);
+    font-size:24px;
+  }
+
+  .playbackStartStopButton{
+    min-width:var(--ui-btn-h-small);
+    width:var(--ui-btn-h-small);
+    font-size:24px;
+    letter-spacing:0;
+  }
+
+  /* CHANGED-0413-2: fine alignment for specific transport icons */
+  #seekBack,
+  #seekForward{
+    font-size:24px;
+  }
+
+  #prevTrack,
+  #nextTrack{
+    font-size:24px;
+  }
+
+  #middlePlayPause{
+    font-size:22px;
+  }
+
+  .speedValueDisplay{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:68px;
+    min-height:var(--ui-btn-h-small);
+    border:1px solid var(--accent);
+    border-radius:7px;
+    padding:6px 10px;
+    font-family:monospace;
+    font-weight:bold;
+    font-size:16px;
+    text-align:center;
+    background:#fff;
+    white-space:nowrap;
+  }
+
+  .inlineLabel{
+    flex:0 0 auto;
+    font-weight:bold;
+    font-size:14px;
+    padding:0 2px 0 4px;
+    white-space:nowrap;
+  }
+
+  #helpPanel{
+    display:none;
+    margin-top:12px;
+    padding:14px 16px;
+    border:1px solid rgba(51,153,255,0.28);
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(245,250,255,0.97) 100%);
+    box-shadow:0 4px 12px rgba(0,0,0,0.04);
+    line-height:1.45;
+  }
+
+  #helpPanel.open{
+    display:block;
+  }
+
+  .helpTitle{
+    margin:0 0 8px 0;
+    font-size:20px;
+    line-height:1.2;
+    color:#155da8;
+  }
+
+  .helpText{
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:#22313f;
+  }
+
+  .helpText a{
+    color:#155da8;
+    font-weight:bold;
+  }
+
+  .helpSubTitle{
+    margin:12px 0 8px 0;
+    font-size:16px;
+    color:#155da8;
+  }
+
+  .hotkeyList{
+    list-style:none;
+    margin:0;
+    padding:0;
+    font-size:14px;
+  }
+
+  .hotkeyList li{
+    display:grid;
+    grid-template-columns:150px 1fr;
+    gap:10px;
+    align-items:start;
+    padding:5px 0;
+    border-bottom:1px solid rgba(51,153,255,0.10);
+  }
+
+  .hotkeyList li:last-child{
+    border-bottom:none;
+  }
+
+  .hotkeyKey{
+    font-weight:bold;
+    color:#155da8;
+    white-space:nowrap;
+  }
+
+  .helpNote{
+    margin-top:10px;
+    padding:9px 11px;
+    border-radius:8px;
+    background:rgba(51,153,255,0.08);
+    color:#21405f;
+    font-size:13px;
+    line-height:1.4;
+  }
+
+  .helpActions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    margin-top:10px;
+  }
+
+  .helpActionButton{
+    min-height:38px;
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:bold;
+    font-size:13px;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    padding:8px 11px;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .helpActionText{
+    font-size:13px;
+    color:#21405f;
+    line-height:1.4;
+    max-width:620px;
+  }
+
+  .tooltipModeLine{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin:12px 0 6px 0;
+  }
+
+  .tooltipModeLabel{
+    font-weight:bold;
+    color:#155da8;
+    white-space:nowrap;
+  }
+
+  .tooltipModeButtons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+  }
+
+  .waveRow{
+    display:grid;
+    grid-template-columns:15% 70% 15%;
+    gap:var(--ui-gap);
+    align-items:stretch;
+    margin-top:10px;
+  }
+
+  .waveSideButton{
+    min-height:var(--wave-height);
+    border:none;
+    border-radius:7px;
+    background:var(--accent);
+    color:#fff;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    font-weight:bold;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:8px 6px;
+  }
+
+  /* CHANGED-0413-1: larger current time, duration removed */
+  .wavePlayButton{
+    font-size:38px;
+    line-height:1;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  /* CHANGED-0413-2: nudge play/time lower for better vertical centering */
+  .wavePlayButton .wavePlaySymbol{
+    transform:translateY(4px);
+  }
+
+  .wavePlayButton .wavePlayTime{
+    transform:translateY(4px);
+  }
+
+  .wavePlaySymbol{
+    line-height:1;
+  }
+
+  .wavePlayTime{
+    font-family:monospace;
+    font-size:20px;
+    line-height:1.05;
+    font-weight:bold;
+    white-space:nowrap;
+  }
+
+  /* CHANGED-0413-1: right waveform column split vertically into 2 buttons */
+  .waveSideStack{
+    display:grid;
+    grid-template-rows:1fr 1fr;
+    gap:var(--ui-gap);
+    min-height:var(--wave-height);
+  }
+
+  .waveStackButton{
+    min-height:calc((var(--wave-height) - var(--ui-gap)) / 2);
+    border:none;
+    border-radius:7px;
+    background:var(--accent);
+    color:#fff;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    font-weight:bold;
+    transition:transform 0.08s ease, box-shadow 0.15s ease, background 0.15s ease;
+    appearance:none;
+    -webkit-appearance:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:6px;
+    line-height:1.08;
+    white-space:pre-line;
+    font-size:13px;
+  }
+
+  .waveStackButton:hover{
+    background:var(--accent-dark);
+    box-shadow:0 10px 20px rgba(0,0,0,0.20), 0 4px 10px rgba(0,0,0,0.14);
+  }
+
+  .waveStackButton.is-active{
+    box-shadow:var(--shadow-pressed);
+    transform:translateY(1px);
+  }
+
+  #waveformContainer{
+    border:1px solid var(--accent);
+    border-radius:7px;
+    padding:6px;
+    background:#fff;
+    margin-top:0;
+    position:relative;
+  }
+
+  #waveform{
+    display:block;
+    width:100%;
+    height:var(--wave-height);
+    background:#fff;
+    border-radius:4px;
+    cursor:pointer;
+    touch-action:none;
+  }
+
+  /* CHANGED-0413-1: waveform loading overlay */
+  .waveLoading{
+    position:absolute;
+    inset:6px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+    background:rgba(255,255,255,0.18);
+    border-radius:4px;
+    font-size:28px;
+    font-weight:bold;
+    letter-spacing:1px;
+    color:rgba(70,70,70,0.45);
+  }
+
+  .waveLoading.show{
+    display:flex;
+  }
+
+  .sliderDualRow{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    width:100%;
+    margin-top:10px;
+  }
+
+  .sliderCard{
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:9px 11px;
+    background:#fff;
+  }
+
+  .sliderLabel{
+    font-weight:bold;
+    margin-bottom:7px;
+    font-size:15px;
+  }
+
+  .sliderHint{
+    display:none;
+    margin-top:8px;
+    padding:8px 10px;
+    border-radius:7px;
+    background:#eef7ff;
+    color:#155da8;
+    border:1px solid #b9d9fb;
+    font-size:13px;
+    line-height:1.35;
+    font-weight:bold;
+  }
+
+  .sliderHint.show{
+    display:block;
+  }
+
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    appearance:none;
+    height:8px;
+    border-radius:4px;
+    background:#ccc;
+    outline:none;
+  }
+
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    margin-top:-4px;
+    border:none;
+  }
+
+  input[type=range]::-moz-range-thumb{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    border:none;
+  }
+
+  .mainContent{
+    display:block;
+  }
+
+  /* CHANGED-0413-1: playlist and pdf are always visible */
+  .mainColumns{
+    display:flex;
+    gap:var(--pdf-gap);
+    align-items:stretch;
+    margin-top:12px;
+  }
+
+  .playlistBox{
+    display:block;
+    width:33%;
+    max-height:none;
+    overflow:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    border:1px solid var(--accent);
+    border-radius:7px;
+    background:#fff;
+  }
+
+  .pdfContainer{
+    display:block;
+    width:67%;
+    overflow:hidden;
+    border:1px solid var(--accent);
+    border-radius:7px;
+    background:#fff;
+    aspect-ratio:var(--a4-ratio);
+    min-height:0;
+    position:relative;
+  }
+
+  .playlistList{
+    list-style:none;
+    margin:0;
+    padding:0;
+  }
+
+  .playlistItem{
+    border-bottom:1px solid #eee;
+  }
+
+  /* CHANGED-0413-1: playlist rows behave like buttons with blue hover */
+  .trackButton{
+    width:100%;
+    border:none;
+    background:#fff;
+    text-align:left;
+    padding:10px 12px;
+    cursor:pointer;
+    color:var(--text);
+    font-size:15px;
+    transition:background 0.15s ease, color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+    border-radius:0;
+    appearance:none;
+    -webkit-appearance:none;
+  }
+
+  .trackButton:hover{
+    background:var(--accent);
+    color:#fff;
+  }
+
+  .trackButton.current{
+    font-weight:bold;
+    background:rgba(100,200,255,0.25);
+  }
+
+  .trackButton.current:hover{
+    background:var(--accent);
+    color:#fff;
+  }
+
+  #pdfViewer{
+    display:block;
+    width:100%;
+    height:100%;
+    border:none;
+  }
+
+  #loopA{
+    background:#fff;
+    color:var(--loop-a);
+    border:2px solid var(--loop-a);
+  }
+
+  #loopB{
+    background:#fff;
+    color:var(--loop-b);
+    border:2px solid var(--loop-b);
+  }
+
+  #loopC{
+    background:#fff;
+    color:var(--loop-c);
+    border:2px solid var(--loop-c);
+  }
+
+  #loopA:hover{
+    background:rgba(0,200,83,0.16);
+  }
+
+  #loopB:hover{
+    background:rgba(255,152,0,0.16);
+  }
+
+  #loopC:hover{
+    background:rgba(255,23,68,0.16);
+  }
+
+  #loopA.is-active{
+    background:rgba(0,200,83,0.24);
+  }
+
+  #loopB.is-active{
+    background:rgba(255,152,0,0.24);
+  }
+
+  #loopC.is-active{
+    background:rgba(255,23,68,0.24);
+  }
+
+  .customTooltip{
+    position:fixed;
+    z-index:99999;
+    max-width:min(420px, calc(100vw - 24px));
+    padding:7px 9px;
+    border-radius:8px;
+    background:rgba(255,255,255,0.78);
+    color:var(--accent);
+    border:1px solid rgba(51,153,255,0.28);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    font-size:18px;
+    line-height:1.0;
+    font-weight:bold;
+    box-shadow:0 8px 15px rgba(0,0,0,0.28);
+    pointer-events:none;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(4px);
+    transition:opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+    word-break:break-word;
+  }
+
+  .customTooltip.show{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0);
+  }
+
+  /* CHANGED-0413-2: MINI mode */
+  .playerShell.is-mini .headerRow{
+    display:none;
+  }
+
+  .playerShell.is-mini #helpPanel{
+    display:none !important;
+  }
+
+  .playerShell.is-mini .waveRow{
+    grid-template-columns:15% 85%;
+  }
+
+  .playerShell.is-mini .waveSideStack{
+    display:none;
+  }
+
+  .playerShell.is-mini #advancedControls{
+    display:none !important;
+  }
+
+  /* CHANGED-0413-2: keep normal screens in one control row; wrap only on smaller screens */
+  @media (max-width: 760px){
+    #advancedControls .controlsStrip{
+      flex-wrap:wrap;
+      overflow:visible;
+      row-gap:10px;
+    }
+
+    #advancedControls .controlGroup{
+      flex-wrap:wrap;
+      width:100%;
+      min-width:0;
+      justify-content:flex-start;
+    }
+  }
+
+  @media (max-width: 900px){
+    .mainColumns{
+      flex-direction:column;
+    }
+
+    .playlistBox,
+    .pdfContainer{
+      width:100%;
+    }
+
+    .sliderDualRow{
+      grid-template-columns:1fr;
+    }
+
+    #trackVersions,
+    #printControls{
+      flex-wrap:wrap;
+    }
+
+    .versionWrap{
+      flex:1 1 calc(50% - 8px);
+      min-width:150px;
+    }
+
+    .hotkeyList li{
+      grid-template-columns:1fr;
+      gap:2px;
+    }
+
+    .hotkeyKey{
+      margin-bottom:2px;
+    }
+  }
+
+  @media (max-width: 640px){
+    body{
+      padding:10px;
+    }
+
+    .playerShell{
+      padding:8px;
+      border-radius:14px;
+    }
+
+    .box{
+      padding:10px;
+    }
+
+    /* CHANGED-0413-2: keep both title rows in one line on small screens */
+    .headerRow,
+    .pieceHeaderDesktop{
+      grid-template-columns:22% 56% 22%;
+      gap:8px;
+    }
+
+    /* CHANGED-0413-2: in MAXI keep playback / waveform / right buttons in one row */
+    .waveRow{
+      grid-template-columns:22% 56% 22%;
+      gap:8px;
+    }
+
+    .singleInfoLine,
+    .infoLine{
+      font-size:15px;
+    }
+
+    .infoPrefixBreak{
+      display:block;
+    }
+
+    .smallControl{
+      min-width:38px;
+      width:38px;
+      height:38px;
+      font-size:22px;
+    }
+
+    .smallControl.textControl{
+      min-width:60px;
+      width:auto;
+      font-size:11px;
+      padding:0 5px;
+    }
+
+    .toolbarButton,
+    .navLinkButton,
+    .headerButton,
+    .pieceNavButton,
+    .togglePanelButton,
+    .mobilePlaybackButton{
+      min-height:42px;
+      font-size:12px;
+      padding:6px 6px;
+    }
+
+    .wavePlayTime{
+      font-size:18px;
+    }
+
+    .waveStackButton{
+      font-size:12px;
+      padding:5px;
+    }
+
+    .playerShell.is-mini .waveRow{
+      grid-template-columns:22% 78%;
+    }
+  }
+</style>
+</head>
+
+<body>
+<div class="page">
+  <div class="playerShell" id="playerShell">
+
+    <div class="box">
+      <div id="statusMessage" class="statusMessage" role="alert" aria-live="assertive"></div>
+
+      <div class="headerRow">
+        <!-- CHANGED-0413-2: MAIN PAGE button replaced with PRINT PDF toggle -->
+        <button
+          id="togglePrintRow"
+          class="headerButton"
+          type="button"
+          aria-expanded="false"
+          aria-controls="printControls"
+          title="Open or close PDF print options (Hotkey: P)"
+        >
+          PRINT PDF
+        </button>
+
+        <div class="infoPanel" aria-live="polite">
+          <!-- CHANGED-0413-1: top title prefix renamed -->
+          <div class="singleInfoLine" id="albumTitlePanel">ILYA LEHMAN, Album: My First Martele Stroke</div>
+        </div>
+
+        <button
+          id="toggleHelp"
+          class="headerButton helpButton"
+          type="button"
+          aria-expanded="false"
+          aria-controls="helpPanel"
+          title="Show or hide help and instructions"
+        >
+          HELP / INFO
+        </button>
+      </div>
+
+      <!-- CHANGED-0413-2: print row moved directly under top PRINT button -->
+      <div id="printControls" aria-label="PDF print controls">
+        <div class="versionWrap">
+          <button id="printClavierButton" class="versionButton" type="button" title="Open Print Clavier PDF">
+            PRINT CLAVIER PDF
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button id="printDuetsButton" class="versionButton" type="button" title="Open Print Duets PDF">
+            PRINT DUETS PDF
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button id="printCurrentButton" class="versionButton" type="button" title="Open current piece PDF">
+            PRINT CURRENT PDF
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button id="closePrintRowButton" class="versionButton" type="button" title="Close print row (Hotkey: P)">
+            CLOSE PRINT ROW
+          </button>
+        </div>
+      </div>
+
+      <div id="helpPanel" aria-label="Help and instructions">
+        <h2 class="helpTitle">Practice Player — Help & Instructions</h2>
+
+        <p class="helpText">
+          <strong>Practice Player</strong> is a focused music-study player built for efficient instrumental practice.
+          It combines audio playback, score viewing, waveform navigation, loop points, speed control, and track-version switching in one clear workspace.
+        </p>
+
+        <p class="helpText">
+          It is especially useful for repetition-based work: you can jump inside the waveform, repeat short passages,
+          slow the music down, stop to the last playback start point, and switch between accompaniment or part versions without breaking concentration.
+        </p>
+
+        <!-- CHANGED-0413-2: MAIN PAGE moved into info text -->
+        <p class="helpText">
+          To explore other albums, open the
+          <a href="https://demo1-il.vln.guru/" target="_self">main page</a>.
+          There you can learn about other albums.
+        </p>
+
+        <div class="tooltipModeLine">
+          <span class="tooltipModeLabel">TOOLTIPS:</span>
+          <div class="tooltipModeButtons">
+            <button id="tooltipModeOffButton" class="helpActionButton" type="button">ALWAYS OFF</button>
+            <button id="tooltipModeOnceButton" class="helpActionButton" type="button">SHOW ONES</button>
+            <button id="tooltipModeAlwaysButton" class="helpActionButton" type="button">ALWAYS ON</button>
+          </div>
+        </div>
+
+        <div class="helpActionText">
+          Press <strong>T</strong> to cycle tooltip modes. <strong>SHOW ONES</strong> resets the remembered tips and shows them once again.
+        </div>
+
+        <div class="helpNote">
+          <strong>ALWAYS OFF</strong> hides all guided tips. <strong>SHOW ONES</strong> shows each tip once, then remembers it.
+          <strong>ALWAYS ON</strong> shows tips every time you hover or focus a control.
+        </div>
+
+        <h3 class="helpSubTitle">Hotkeys</h3>
+        <ul class="hotkeyList">
+          <li><span class="hotkeyKey">Space</span><span>Play / Pause</span></li>
+          <li><span class="hotkeyKey">Left Arrow</span><span>Seek backward</span></li>
+          <li><span class="hotkeyKey">Right Arrow</span><span>Seek forward</span></li>
+          <li><span class="hotkeyKey">Up Arrow</span><span>Increase playback speed by 1%</span></li>
+          <li><span class="hotkeyKey">Down Arrow</span><span>Decrease playback speed by 1%</span></li>
+          <li><span class="hotkeyKey">R</span><span>Reset speed to 100%</span></li>
+          <!-- CHANGED-0413-1: loop hotkeys changed to S / F / C -->
+          <li><span class="hotkeyKey">S</span><span>Set loop START point</span></li>
+          <li><span class="hotkeyKey">F</span><span>Set loop FINISH point</span></li>
+          <li><span class="hotkeyKey">C</span><span>Clear loop</span></li>
+          <li><span class="hotkeyKey">P</span><span>Open / close PRINT PDF row</span></li>
+          <!-- CHANGED-0413-2: added A hotkey -->
+          <li><span class="hotkeyKey">A</span><span>Open / close AUDIO VERSIONS row</span></li>
+          <!-- CHANGED-0413-2: added M hotkey -->
+          <li><span class="hotkeyKey">M</span><span>Switch MINI-PLAYER / MAXI-PLAYER mode</span></li>
+          <li><span class="hotkeyKey">T</span><span>Cycle tooltip mode: OFF → SHOW ONES → ALWAYS ON</span></li>
+          <li><span class="hotkeyKey">H</span><span>Show / hide this Help panel</span></li>
+        </ul>
+      </div>
+
+      <div class="pieceHeaderDesktop">
+        <!-- CHANGED-0413-2: PRINT button replaced with MINI/MAXI button -->
+        <button
+          id="togglePlayerMode"
+          class="pieceNavButton"
+          type="button"
+          title="Switch MINI-PLAYER / MAXI-PLAYER mode (Hotkey: M)"
+        >
+          MINI-PLAYER
+        </button>
+
+        <div class="infoPanel" aria-live="polite">
+          <div class="singleInfoLine" id="pieceNamePanel">Piece Name: No track</div>
+        </div>
+
+        <!-- CHANGED-0413-1: next track button replaced with audio versions row toggle -->
+        <button
+          id="toggleVersions"
+          class="pieceNavButton"
+          type="button"
+          aria-expanded="false"
+          aria-controls="trackVersions"
+          title="Open or close audio versions (Hotkey: A)"
+        >
+          AUDIO VERSIONS
+        </button>
+      </div>
+
+      <!-- CHANGED-0413-2: versions row moved directly under piece row -->
+      <div id="trackVersions" aria-label="Track versions">
+        <div class="versionWrap">
+          <button class="versionButton" type="button" data-type="main" title="Switch to demo of the piece">
+            Demo<br>of the Piece
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button class="versionButton" type="button" data-type="pv1" title="Switch to violin 1st and piano">
+            Violin 1st<br>and piano
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button class="versionButton" type="button" data-type="pv2" title="Switch to violin 2d and piano">
+            Violin 2d<br>and piano
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button class="versionButton" type="button" data-type="dt" title="Switch to violins 1st and 2d duet">
+            Violins 1st<br>and 2d Duet
+          </button>
+        </div>
+        <div class="versionWrap">
+          <button class="versionButton" type="button" data-type="pn" title="Switch to piano accompaniment only">
+            Piano<br>Accomp-nt only
+          </button>
+        </div>
+      </div>
+
+      <div class="sliderDualRow">
+        <div class="sliderCard">
+          <div id="volumeLabel" class="sliderLabel" title="Current volume level">Volume: 50%</div>
+          <input
+            id="volume"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.5"
+            aria-label="Volume"
+            title="Adjust volume"
+          />
+          <div id="volumeIosHint" class="sliderHint">
+            On iPhone/iPad, playback volume is controlled by the device buttons.
+          </div>
+        </div>
+
+        <div class="sliderCard">
+          <div id="speedLabel" class="sliderLabel" title="Current playback speed">Speed: 100%</div>
+          <input
+            id="speedSlider"
+            type="range"
+            min="0.5"
+            max="1.5"
+            step="0.01"
+            value="1"
+            aria-label="Playback speed"
+            title="Adjust playback speed"
+          />
+        </div>
+      </div>
+
+      <div class="waveRow">
+        <button
+          id="topPlayPause"
+          class="waveSideButton wavePlayButton"
+          type="button"
+          aria-label="Play or pause"
+          title="Play or pause the current track"
+        >
+          <span id="wavePlaySymbol" class="wavePlaySymbol">▶</span>
+          <span id="timeDisplay" class="wavePlayTime">00:00</span>
+        </button>
+
+        <div id="waveformContainer">
+          <canvas id="waveform" aria-label="Waveform display" title="Click to jump. Drag green or orange handles to change loop points."></canvas>
+          <!-- CHANGED-0413-1: loading text over waveform -->
+          <div id="waveLoading" class="waveLoading" aria-hidden="true">LOADING</div>
+        </div>
+
+        <!-- CHANGED-0413-1: right side split into playback mode and controls toggle -->
+        <div class="waveSideStack">
+          <button
+            id="playModeButton"
+            class="waveStackButton"
+            type="button"
+            aria-label="Playback mode"
+            title="Change playback mode"
+          >
+            <span id="playModeTextDesktop">PLAY
+ALL
+PIECES</span>
+          </button>
+
+          <button
+            id="toggleControls"
+            class="waveStackButton"
+            type="button"
+            aria-expanded="false"
+            aria-controls="advancedControls"
+            title="Show or hide playback controls"
+          >
+            <span id="controlsToggleText">SHOW
+CONTROLS</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="advancedControls" aria-label="Advanced playback controls">
+        <div class="controlsStrip">
+          <div class="controlGroup">
+            <!-- CHANGED-0413-2: previous/next track buttons returned -->
+            <button id="prevTrack" class="smallControl iconWide" type="button" aria-label="Previous track" title="Load previous track and switch to MAIN version">⏮</button>
+            <button id="seekBack" class="smallControl iconWide" type="button" aria-label="Seek backward" title="Seek backward in current track (Hotkey: ←)">«</button>
+            <button id="topCenterPlayPause" class="smallControl playbackStartStopButton" type="button" aria-label="Play or pause" title="Play or pause the current track (Hotkey: Space)">▶</button>
+            <!-- CHANGED-0413-2: restart button replaced by stop button -->
+            <button id="middlePlayPause" class="smallControl playbackStartStopButton" type="button" aria-label="Stop and return to the last playback start point" title="Stop and return to the last playback start point">■</button>
+            <button id="seekForward" class="smallControl iconWide" type="button" aria-label="Seek forward" title="Seek forward in current track (Hotkey: →)">»</button>
+            <button id="nextTrack" class="smallControl iconWide" type="button" aria-label="Next track" title="Load next track and switch to MAIN version">⏭</button>
+          </div>
+
+          <div class="controlGroup">
+            <span class="inlineLabel">Speed:</span>
+            <span id="speedValueDisplay" class="speedValueDisplay" title="Current playback speed">100%</span>
+            <button id="speedMinus" class="smallControl" type="button" aria-label="Decrease speed" title="Decrease playback speed by 1% (Hotkey: ↓)">−</button>
+            <button id="speedReset" class="smallControl" type="button" aria-label="Reset speed" title="Reset playback speed to 100% (Hotkey: R)">=</button>
+            <button id="speedPlus" class="smallControl" type="button" aria-label="Increase speed" title="Increase playback speed by 1% (Hotkey: ↑)">+</button>
+          </div>
+
+          <div class="controlGroup">
+            <span class="inlineLabel">Loop:</span>
+            <!-- CHANGED-0413-1: loop buttons renamed and hotkeys changed -->
+            <button id="loopA" class="smallControl textControl" type="button" aria-label="Set loop START" title="Set loop START (Hotkey: S)">START</button>
+            <button id="loopB" class="smallControl textControl" type="button" aria-label="Set loop FINISH" title="Set loop FINISH (Hotkey: F)">FINISH</button>
+            <button id="loopC" class="smallControl textControl" type="button" aria-label="Clear loop" title="Clear loop (Hotkey: C)">CLEAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mainContent box">
+      <div id="mainColumns" class="mainColumns">
+        <div class="playlistBox">
+          <ul id="playlist" class="playlistList" aria-label="Track list"></ul>
+        </div>
+
+        <div class="pdfContainer">
+          <iframe id="pdfViewer" src="" allowfullscreen title="PDF viewer"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <audio id="audio" preload="metadata"></audio>
+    <div id="customTooltip" class="customTooltip" role="tooltip" aria-hidden="true"></div>
+  </div>
+</div>
+
+<script>
+  // =========================
+  // CONSTANTS
+  // =========================
+
+  /* CHANGED-0413-1: top album title renamed */
+  const ALBUM_TITLE_TEXT = "ILYA LEHMAN, Album: My First Martele Stroke";
+  const DEFAULT_VOLUME = 0.5;
+  const DEFAULT_SPEED = 1;
+  const MIN_SPEED = 0.5;
+  const MAX_SPEED = 1.5;
+  const SPEED_STEP = 0.01;
+  const SEEK_STEP_SECONDS = 0.1;
+  const HOLD_SEEK_INTERVAL_MS = 35;
+  const WAVEFORM_HEIGHT = 100;
+
+  /* CHANGED-4: smaller drag-only hitbox so click can place cursor closer to loop marker */
+  const LOOP_HANDLE_HITBOX_PX = 10;
+  const LOOP_LINE_WIDTH = 5;
+  const LOOP_HANDLE_RADIUS = 8;
+
+  const TOOLTIP_SEEN_STORAGE_KEY = "practicePlayerSeenTooltips_v101";
+  const TOOLTIP_MODE_STORAGE_KEY = "practicePlayerTooltipMode_v101";
+
+  const TOOLTIP_MODES = {
+    OFF: "off",
+    ONCE: "once",
+    ALWAYS: "always"
+  };
+
+  /* CHANGED-0413-1: playback modes rebuilt */
+  const PLAY_MODES = {
+    PLAY_ALL_PIECES: "play_all_pieces",
+    PLAY_ONE_PIECE: "play_one_piece",
+    PLAY_ONE_BY_ONE: "play_one_by_one"
+  };
+
+  /* CHANGED-0413-2: button shows NEXT mode, not current */
+  const PLAY_MODE_LABELS = {
+    [PLAY_MODES.PLAY_ALL_PIECES]: "PLAY ALL\nPIECES",
+    [PLAY_MODES.PLAY_ONE_PIECE]: "PLAY ONE\nPIECE",
+    [PLAY_MODES.PLAY_ONE_BY_ONE]: "PLAY ONE\nBY ONE"
+  };
+
+  /* CHANGED-0413-1: extra rows mode */
+  const AUX_PANEL_MODES = {
+    NONE: "none",
+    PRINT: "print",
+    VERSIONS: "versions",
+    CONTROLS: "controls"
+  };
+
+  /* CHANGED-0413-2: player UI modes */
+  const PLAYER_VIEW_MODES = {
+    MINI: "mini",
+    MAXI: "maxi"
+  };
+
+  const tracks = [
+    {
+      name: "1. My First Martele",
+      id: "Martele-01",
+      url: "https://kb-music.github.io/files/Martele-01_CL.mp3",
+      pdfCLDrive: "1OEaBaO5RwbFRXA2kKHUgjQYzgCAKmyKw",
+      pdfDTDrive: "1RNZ3lEigidIqaBjFXdSIPeT30UapS5p8",
+      durationText: "01:06"
+    },
+    {
+      name: "2. My Happy Ball",
+      id: "Martele-02",
+      url: "https://kb-music.github.io/files/Martele-02_CL.mp3",
+      pdfCLDrive: "11tl-HosEN7PyTv-jUp67JxPL1Ox0laJL",
+      pdfDTDrive: "1B3z_0BLWnOav6YNMJa2UdusvajdRRFTB",
+      durationText: "01:18"
+    },
+    {
+      name: "3. Two Friends",
+      id: "Martele-03",
+      url: "https://kb-music.github.io/files/Martele-03_CL.mp3",
+      pdfCLDrive: "1gPgaf08KMRfJ_8--88RjxvkA7AF7vJ4d",
+      pdfDTDrive: "1SUDMD-MzC0mNUxiBqJztZgG-2ZODf5zL",
+      durationText: "02:34"
+    },
+    {
+      name: "4. Polka Dance",
+      id: "Martele-04",
+      url: "https://kb-music.github.io/files/Martele-04_CL.mp3",
+      pdfCLDrive: "1lM6bRat5BxK9ld-eWqwOLlH5c3cnjkRV",
+      pdfDTDrive: "15RhsQNqjkM-_PaAYz3FE_W-FBvRh_gQq",
+      durationText: "01:55"
+    },
+    {
+      name: "5. Quarts",
+      id: "Martele-05",
+      url: "https://kb-music.github.io/files/Martele-05_CL.mp3",
+      pdfCLDrive: "1MKnaI95vCPAHtXUGJFVjgYy_zysxFyMR",
+      pdfDTDrive: "1dGzUefUICV_Nk0LOnbhNKYHIJNGUiR1R",
+      durationText: "01:20"
+    },
+    {
+      name: "6. Cuckoo",
+      id: "Martele-06",
+      url: "https://kb-music.github.io/files/Martele-06_CL.mp3",
+      pdfCLDrive: "1fSI7yhJcKC1FrMDJaRpr05aSsgZ2CY5k",
+      pdfDTDrive: "1coFw63BEcYJOtlnQPi2DS6NspC7fR77A",
+      durationText: "02:35"
+    },
+    {
+      name: "7. Two Proudlings",
+      id: "Martele-07",
+      url: "https://kb-music.github.io/files/Martele-07_CL.mp3",
+      pdfCLDrive: "1NJDLhJzdUwiIkVbcQ3A2PmI0NBEb0Ptl",
+      pdfDTDrive: "1FAbAolhryzUgdlsR2uHktGYpcNU_-a__",
+      durationText: "02:38"
+    },
+    {
+      name: "8. The Hunter",
+      id: "Martele-08",
+      url: "https://kb-music.github.io/files/Martele-08_CL.mp3",
+      pdfCLDrive: "17xfqsw_JCGfc8GDGVtKjJTKBY7nNDi23",
+      pdfDTDrive: "1Pqq2QnlTQJojPEzsVzzoWLfNMae0Nc1T",
+      durationText: "02:05"
+    },
+    {
+      name: "9. Echo",
+      id: "Martele-09",
+      url: "https://kb-music.github.io/files/Martele-09_CL.mp3",
+      pdfCLDrive: "1UBI-RZAtESIVJnhn_Cgjjic0qb2RdCsV",
+      pdfDTDrive: "1htpzXW2RS4XeULF-2zH7hgwRS24Rg6Jq",
+      durationText: "01:09"
+    },
+    {
+      name: "10. The Doll",
+      id: "Martele-10",
+      url: "https://kb-music.github.io/files/Martele-10_CL.mp3",
+      pdfCLDrive: "1Ojg9kk3ky3vA8SdfKjKXbHEPK6k6-oXY",
+      pdfDTDrive: "1A-ywzCGYoqAOjSsb_7O89nIeHhbpS9kj",
+      durationText: "00:59"
+    }
+  ];
+
+  // =========================
+  // ELEMENTS
+  // =========================
+  const audio = document.getElementById("audio");
+  const playerShell = document.getElementById("playerShell");
+
+  const topPlayPause = document.getElementById("topPlayPause");
+  const middlePlayPause = document.getElementById("middlePlayPause");
+  const topCenterPlayPause = document.getElementById("topCenterPlayPause");
+  const wavePlaySymbol = document.getElementById("wavePlaySymbol");
+
+  const playModeButton = document.getElementById("playModeButton");
+  const playModeTextDesktop = document.getElementById("playModeTextDesktop");
+
+  const albumTitlePanel = document.getElementById("albumTitlePanel");
+  const pieceNamePanel = document.getElementById("pieceNamePanel");
+
+  const statusMessage = document.getElementById("statusMessage");
+
+  const toggleVersionsBtn = document.getElementById("toggleVersions");
+  const toggleControlsBtn = document.getElementById("toggleControls");
+  const togglePrintRowBtn = document.getElementById("togglePrintRow");
+  const toggleHelpBtn = document.getElementById("toggleHelp");
+  const togglePlayerModeBtn = document.getElementById("togglePlayerMode");
+  const controlsToggleText = document.getElementById("controlsToggleText");
+
+  const trackVersionsBlock = document.getElementById("trackVersions");
+  const advancedControlsBlock = document.getElementById("advancedControls");
+  const printControlsBlock = document.getElementById("printControls");
+  const helpPanel = document.getElementById("helpPanel");
+
+  const printClavierButton = document.getElementById("printClavierButton");
+  const printDuetsButton = document.getElementById("printDuetsButton");
+  const printCurrentButton = document.getElementById("printCurrentButton");
+  const closePrintRowButton = document.getElementById("closePrintRowButton");
+
+  const tooltipModeOffButton = document.getElementById("tooltipModeOffButton");
+  const tooltipModeOnceButton = document.getElementById("tooltipModeOnceButton");
+  const tooltipModeAlwaysButton = document.getElementById("tooltipModeAlwaysButton");
+
+  const prevTrackButton = document.getElementById("prevTrack");
+  const nextTrackButton = document.getElementById("nextTrack");
+  const seekBackButton = document.getElementById("seekBack");
+  const seekForwardButton = document.getElementById("seekForward");
+
+  const speedMinusButton = document.getElementById("speedMinus");
+  const speedPlusButton = document.getElementById("speedPlus");
+  const speedResetButton = document.getElementById("speedReset");
+
+  const loopAButton = document.getElementById("loopA");
+  const loopBButton = document.getElementById("loopB");
+  const loopCButton = document.getElementById("loopC");
+
+  const timeDisplay = document.getElementById("timeDisplay");
+  const speedValueDisplay = document.getElementById("speedValueDisplay");
+
+  const speedSlider = document.getElementById("speedSlider");
+  const volumeSlider = document.getElementById("volume");
+  const volumeIosHint = document.getElementById("volumeIosHint");
+  const speedLabel = document.getElementById("speedLabel");
+  const volumeLabel = document.getElementById("volumeLabel");
+
+  const playlist = document.getElementById("playlist");
+  const pdfViewer = document.getElementById("pdfViewer");
+  const pdfContainer = document.querySelector(".pdfContainer");
+  const mainColumns = document.getElementById("mainColumns");
+
+  const playlistBox = document.querySelector(".playlistBox");
+
+  const canvas = document.getElementById("waveform");
+  const ctx = canvas.getContext("2d");
+  const waveLoading = document.getElementById("waveLoading");
+
+  const customTooltip = document.getElementById("customTooltip");
+
+  // =========================
+  // STATE
+  // =========================
+  let currentTrackIndex = 0;
+  let currentSpeed = DEFAULT_SPEED;
+
+  /* CHANGED-0413-1: start mode is PLAY ONE BY ONE */
+  let playMode = PLAY_MODES.PLAY_ONE_BY_ONE;
+
+  /* CHANGED-0413-2: player starts MAXI on normal screens, MINI on small/mobile */
+  let playerViewMode = PLAYER_VIEW_MODES.MAXI;
+
+  let waveformData = [];
+  let loopA = null;
+  let loopB = null;
+  let draggingHandle = null;
+
+  let currentDecodeToken = 0;
+  const versionAvailabilityCache = new Map();
+
+  let holdSeekInterval = null;
+  let middlePlaybackAnchorTime = 0;
+
+  let tooltipTarget = null;
+  let tooltipMode = TOOLTIP_MODES.ONCE;
+  let seenTooltipKeys = new Set();
+
+  let volumeHintHideTimer = null;
+
+  /* CHANGED-0413-1: only one contextual row can be open */
+  let activeAuxPanel = AUX_PANEL_MODES.NONE;
+
+  const hasIOSVolumeRestriction = detectIOSVolumeRestriction();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // =========================
+  // HELPERS
+  // =========================
+  function showError(message) {
+    statusMessage.textContent = message;
+    statusMessage.className = "statusMessage error";
+  }
+
+  function clearError() {
+    statusMessage.textContent = "";
+    statusMessage.className = "statusMessage";
+  }
+
+  function isMobileOrTabletDevice() {
+    const ua = navigator.userAgent || navigator.vendor || "";
+    return /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  /* CHANGED-0413-2: screen rule for MINI/MAXI default */
+  function isCompactScreen() {
+    return window.matchMedia("(max-width: 900px)").matches || isMobileOrTabletDevice();
+  }
+
+  function getGoogleDrivePreviewUrl(fileId) {
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  }
+
+  function getGithubPdfUrlByTrack(track, useCLPdf, withPreviewHash = true) {
+    const suffix = useCLPdf ? "CL" : "DT";
+    const baseUrl = `https://kb-music.github.io/files/${track.id}_${suffix}.pdf`;
+    return withPreviewHash ? `${baseUrl}#zoom=page-fit&view=FitH` : baseUrl;
+  }
+
+  function getCurrentVersionType() {
+    return audio.dataset.version || "main";
+  }
+
+  function shouldUseCLPdf(versionType) {
+    return versionType === "main";
+  }
+
+  function getPreferredPdfUrl(track, versionType = getCurrentVersionType()) {
+    const useCLPdf = shouldUseCLPdf(versionType);
+
+    if (isMobileOrTabletDevice()) {
+      const fileId = useCLPdf ? track.pdfCLDrive : track.pdfDTDrive;
+      return getGoogleDrivePreviewUrl(fileId);
+    }
+
+    return getGithubPdfUrlByTrack(track, useCLPdf);
+  }
+
+  /* CHANGED-0413-1: direct printable current piece pdf */
+  function getCurrentPrintablePdfUrl(track, versionType = getCurrentVersionType()) {
+    const useCLPdf = shouldUseCLPdf(versionType);
+    return getGithubPdfUrlByTrack(track, useCLPdf, false);
+  }
+
+  function showVolumeIOSHint() {
+    if (volumeHintHideTimer) clearTimeout(volumeHintHideTimer);
+    volumeIosHint.classList.add("show");
+    volumeHintHideTimer = setTimeout(() => {
+      volumeIosHint.classList.remove("show");
+    }, 3500);
+  }
+
+  function formatTime(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getTrackVersions(id) {
+    const baseUrl = `https://kb-music.github.io/files/${id}`;
+    return {
+      pn: `${baseUrl}_PN.mp3`,
+      pv1: `${baseUrl}_V1.mp3`,
+      pv2: `${baseUrl}_V2.mp3`,
+      dt: `${baseUrl}_DT.mp3`,
+      main: `${baseUrl}_CL.mp3`
+    };
+  }
+
+  function getCurrentTrack() {
+    return tracks[currentTrackIndex];
+  }
+
+  function getTrackDurationSafe() {
+    return Number.isFinite(audio.duration) ? audio.duration : 0;
+  }
+
+  function getTrackDurationText(track) {
+    return track?.durationText || "--:--";
+  }
+
+  function getSafeCurrentTime() {
+    return Math.max(0, audio.currentTime || 0);
+  }
+
+  function isEditableTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName?.toLowerCase();
+    return (
+      tagName === "input" ||
+      tagName === "textarea" ||
+      tagName === "select" ||
+      target.isContentEditable
+    );
+  }
+
+  function isKeyInSet(key, variants) {
+    return variants.includes((key || "").toLowerCase());
+  }
+
+  function detectIOSVolumeRestriction() {
+    const ua = navigator.userAgent || navigator.vendor || "";
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function loadTooltipMode() {
+    try {
+      const stored = localStorage.getItem(TOOLTIP_MODE_STORAGE_KEY);
+      if (!stored) return TOOLTIP_MODES.ONCE;
+      if (Object.values(TOOLTIP_MODES).includes(stored)) return stored;
+      return TOOLTIP_MODES.ONCE;
+    } catch {
+      return TOOLTIP_MODES.ONCE;
+    }
+  }
+
+  function saveTooltipMode() {
+    try {
+      localStorage.setItem(TOOLTIP_MODE_STORAGE_KEY, tooltipMode);
+    } catch {}
+  }
+
+  function loadSeenTooltipKeys() {
+    try {
+      const raw = localStorage.getItem(TOOLTIP_SEEN_STORAGE_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
+    } catch {
+      return new Set();
+    }
+  }
+
+  function saveSeenTooltipKeys() {
+    try {
+      localStorage.setItem(TOOLTIP_SEEN_STORAGE_KEY, JSON.stringify(Array.from(seenTooltipKeys)));
+    } catch {}
+  }
+
+  function clearSeenTooltipKeys() {
+    seenTooltipKeys = new Set();
+    saveSeenTooltipKeys();
+  }
+
+  function getTooltipKey(target) {
+    return target?.dataset?.tooltipKey || "";
+  }
+
+  function rememberTooltipSeen(target) {
+    const key = getTooltipKey(target);
+    if (!key || seenTooltipKeys.has(key)) return;
+    seenTooltipKeys.add(key);
+    saveSeenTooltipKeys();
+  }
+
+  function syncTopPlayButtonVisual() {
+    const isPaused = audio.paused;
+    const symbol = isPaused ? "▶" : "⏸";
+
+    wavePlaySymbol.textContent = symbol;
+    topCenterPlayPause.textContent = symbol;
+
+    topPlayPause.classList.toggle("is-active", !isPaused);
+    topCenterPlayPause.classList.toggle("is-active", !isPaused);
+  }
+
+  /* CHANGED-0413-2: dedicated STOP button */
+  function syncMiddlePlaybackButtonVisual() {
+    middlePlayPause.textContent = "■";
+    middlePlayPause.classList.toggle("is-active", !audio.paused);
+  }
+
+  function syncAllPlayButtonsVisual() {
+    syncTopPlayButtonVisual();
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function forcePlayButtonsToStoppedState() {
+    syncAllPlayButtonsVisual();
+  }
+
+  function getNextPlayMode(mode) {
+    if (mode === PLAY_MODES.PLAY_ONE_BY_ONE) return PLAY_MODES.PLAY_ALL_PIECES;
+    if (mode === PLAY_MODES.PLAY_ALL_PIECES) return PLAY_MODES.PLAY_ONE_PIECE;
+    return PLAY_MODES.PLAY_ONE_BY_ONE;
+  }
+
+  function getPlayModeLabel(mode) {
+    return PLAY_MODE_LABELS[mode];
+  }
+
+  /* CHANGED-0413-2: button shows NEXT mode text */
+  function updatePlayModeUI() {
+    const nextMode = getNextPlayMode(playMode);
+    const label = getPlayModeLabel(nextMode);
+    const currentLabel = getPlayModeLabel(playMode).replace(/\n/g, " ");
+
+    playModeTextDesktop.textContent = label;
+    playModeButton.title = `Switch playback mode to ${label.replace(/\n/g, " ")}. Current mode: ${currentLabel}`;
+  }
+
+  function updateHeaderInfo() {
+    const track = getCurrentTrack();
+    /* CHANGED-0413-1: header text renamed */
+    albumTitlePanel.innerHTML = `<span class="infoPrefix">ILYA LEHMAN, Album:</span><span class="infoPrefixBreak"></span> My First Martele Stroke`;
+    pieceNamePanel.innerHTML = track
+      ? `<span class="infoPrefix">Piece Name:</span><span class="infoPrefixBreak"></span> ${track.name}`
+      : `<span class="infoPrefix">Piece Name:</span><span class="infoPrefixBreak"></span> No track`;
+  }
+
+  /* CHANGED-0413-1: current time only on big play button */
+  function updateTimeDisplay() {
+    const current = formatTime(getSafeCurrentTime());
+    timeDisplay.textContent = current;
+  }
+
+  function updateVolumeUI() {
+    const volume = parseFloat(volumeSlider.value);
+    const percent = Math.round(volume * 100);
+    volumeLabel.textContent = `Volume: ${percent}%`;
+    volumeSlider.style.background = `linear-gradient(to right, var(--accent) ${percent}%, #ccc ${percent}%)`;
+  }
+
+  function updateSpeedUI() {
+    const percent = Math.round(currentSpeed * 100);
+    speedLabel.textContent = `Speed: ${percent}%`;
+    speedValueDisplay.textContent = `${percent}%`;
+
+    const centerPercent = 50;
+    let filledPercent;
+
+    if (currentSpeed >= 1) {
+      filledPercent = centerPercent + ((currentSpeed - 1) / (MAX_SPEED - 1)) * 50;
+      speedSlider.style.background = `linear-gradient(to right, #ccc ${centerPercent}%, var(--accent) ${centerPercent}%, var(--accent) ${filledPercent}%, #ccc ${filledPercent}%)`;
+    } else {
+      filledPercent = centerPercent - ((1 - currentSpeed) / (1 - MIN_SPEED)) * 50;
+      speedSlider.style.background = `linear-gradient(to right, #ccc ${filledPercent}%, var(--accent) ${filledPercent}%, var(--accent) ${centerPercent}%, #ccc ${centerPercent}%)`;
+    }
+  }
+
+  function updateLoopButtonsUI() {
+    loopAButton.classList.toggle("is-active", loopA !== null);
+    loopBButton.classList.toggle("is-active", loopB !== null);
+    loopCButton.classList.toggle("is-active", loopA === null && loopB === null);
+  }
+
+  function updateToggleButtonState(button, isOpen, openText, closedText) {
+    button.classList.toggle("is-active", isOpen);
+    button.textContent = isOpen ? openText : closedText;
+    button.setAttribute("aria-expanded", String(isOpen));
+  }
+
+  function toggleHelpPanel() {
+    const isOpen = helpPanel.classList.toggle("open");
+    updateToggleButtonState(toggleHelpBtn, isOpen, "HIDE HELP / INFO", "HELP / INFO");
+  }
+
+  function updateTooltipControlUI() {
+    tooltipModeOffButton.classList.toggle("is-active", tooltipMode === TOOLTIP_MODES.OFF);
+    tooltipModeOnceButton.classList.toggle("is-active", tooltipMode === TOOLTIP_MODES.ONCE);
+    tooltipModeAlwaysButton.classList.toggle("is-active", tooltipMode === TOOLTIP_MODES.ALWAYS);
+  }
+
+  function resizeCanvas() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const cssWidth = Math.max(300, Math.floor(canvas.clientWidth));
+    const cssHeight = WAVEFORM_HEIGHT;
+
+    canvas.style.height = `${cssHeight}px`;
+    canvas.width = Math.floor(cssWidth * devicePixelRatio);
+    canvas.height = Math.floor(cssHeight * devicePixelRatio);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+
+    drawWaveform();
+  }
+
+  function clearWaveformState() {
+    waveformData = [];
+    drawWaveform();
+  }
+
+  function resetLoop() {
+    loopA = null;
+    loopB = null;
+    draggingHandle = null;
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function setSpeed(value) {
+    currentSpeed = clamp(parseFloat(value), MIN_SPEED, MAX_SPEED);
+    audio.playbackRate = currentSpeed;
+    speedSlider.value = currentSpeed;
+    updateSpeedUI();
+  }
+
+  /* CHANGED-0413-1: cycle through 3 rebuilt modes */
+  function cyclePlayMode() {
+    playMode = getNextPlayMode(playMode);
+    updatePlayModeUI();
+  }
+
+  function setCurrentTimeSafely(value) {
+    const duration = getTrackDurationSafe();
+    if (!duration) {
+      audio.currentTime = Math.max(0, value);
+      updateTimeDisplay();
+      drawWaveform();
+      return;
+    }
+    audio.currentTime = clamp(value, 0, duration);
+    updateTimeDisplay();
+    drawWaveform();
+  }
+
+  function setCurrentTimeByUser(value) {
+    setCurrentTimeSafely(value);
+    middlePlaybackAnchorTime = getSafeCurrentTime();
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function preloadNextTrack() {
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    const nextTrack = tracks[nextIndex];
+    if (!nextTrack?.url) return;
+
+    let preloadLink = document.getElementById("preloadNextTrack");
+    if (!preloadLink) {
+      preloadLink = document.createElement("link");
+      preloadLink.id = "preloadNextTrack";
+      preloadLink.rel = "preload";
+      preloadLink.as = "audio";
+      document.head.appendChild(preloadLink);
+    }
+    preloadLink.href = nextTrack.url;
+  }
+
+  /* CHANGED-0413-2: remember playback start point before each new start */
+  function togglePlayPause() {
+    if (audio.paused) {
+      middlePlaybackAnchorTime = getSafeCurrentTime();
+      audio.play().catch((error) => {
+        console.error("Playback failed:", error);
+      });
+    } else {
+      audio.pause();
+    }
+  }
+
+  /* CHANGED-0413-2: STOP returns to the last playback start point and waits */
+  function toggleMiddlePlaybackStartStop() {
+    audio.pause();
+    setCurrentTimeSafely(middlePlaybackAnchorTime);
+    syncMiddlePlaybackButtonVisual();
+  }
+
+  function seekBy(delta) {
+    setCurrentTimeByUser(getSafeCurrentTime() + delta);
+  }
+
+  function startHoldSeek(delta) {
+    stopHoldSeek();
+    seekBy(delta);
+    holdSeekInterval = setInterval(() => {
+      seekBy(delta);
+    }, HOLD_SEEK_INTERVAL_MS);
+  }
+
+  function stopHoldSeek() {
+    if (holdSeekInterval) {
+      clearInterval(holdSeekInterval);
+      holdSeekInterval = null;
+    }
+  }
+
+  function blurActiveSlider() {
+    const active = document.activeElement;
+    if (active && active.matches && active.matches('input[type="range"]')) {
+      active.blur();
+    }
+  }
+
+  function setTooltipMode(mode, options = {}) {
+    const { resetSeen = false } = options;
+
+    tooltipMode = mode;
+    saveTooltipMode();
+
+    if (resetSeen) clearSeenTooltipKeys();
+
+    updateTooltipControlUI();
+
+    if (tooltipMode === TOOLTIP_MODES.OFF) {
+      hideCustomTooltip();
+    }
+  }
+
+  function cycleTooltipMode() {
+    if (tooltipMode === TOOLTIP_MODES.OFF) {
+      setTooltipMode(TOOLTIP_MODES.ONCE, { resetSeen: true });
+      return;
+    }
+
+    if (tooltipMode === TOOLTIP_MODES.ONCE) {
+      setTooltipMode(TOOLTIP_MODES.ALWAYS);
+      return;
+    }
+
+    setTooltipMode(TOOLTIP_MODES.OFF);
+  }
+
+  function handleIOSVolumeAttempt() {
+    volumeSlider.value = DEFAULT_VOLUME;
+    updateVolumeUI();
+    showVolumeIOSHint();
+  }
+
+  function getClientXFromEvent(event) {
+    if (event.touches && event.touches.length) return event.touches[0].clientX;
+    if (event.changedTouches && event.changedTouches.length) return event.changedTouches[0].clientX;
+    return event.clientX;
+  }
+
+  function getCanvasXFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = getClientXFromEvent(event);
+    return clamp(clientX - rect.left, 0, rect.width);
+  }
+
+  /* CHANGED-4: only return handle when user is really close */
+  function getHandleAtX(x, duration, width) {
+    if (!duration) return null;
+
+    const aX = loopA !== null ? (loopA / duration) * width : null;
+    const bX = loopB !== null ? (loopB / duration) * width : null;
+
+    if (aX !== null && Math.abs(x - aX) <= LOOP_HANDLE_HITBOX_PX) return "A";
+    if (bX !== null && Math.abs(x - bX) <= LOOP_HANDLE_HITBOX_PX) return "B";
+    return null;
+  }
+
+  /* CHANGED-0413-1: autoplay only in PLAY ALL PIECES */
+  function shouldAutoplayOnTrackChange() {
+    return playMode === PLAY_MODES.PLAY_ALL_PIECES;
+  }
+
+  /* CHANGED-0413-2: player mode UI */
+  function updatePlayerViewModeUI() {
+    const isMini = playerViewMode === PLAYER_VIEW_MODES.MINI;
+
+    playerShell.classList.toggle("is-mini", isMini);
+
+    togglePlayerModeBtn.textContent = isMini ? "MAXI-PLAYER" : "MINI-PLAYER";
+    togglePlayerModeBtn.title = isMini
+      ? "Switch to MAXI-PLAYER full interface (Hotkey: M)"
+      : "Switch to MINI-PLAYER minimal interface (Hotkey: M)";
+
+    if (isMini && activeAuxPanel === AUX_PANEL_MODES.CONTROLS) {
+      activeAuxPanel = AUX_PANEL_MODES.NONE;
+      advancedControlsBlock.classList.remove("open");
+    }
+
+    updateAuxPanelButtonsUI();
+    resizeCanvas();
+    adjustPdfContainerHeight();
+  }
+
+  function togglePlayerViewMode() {
+    playerViewMode = playerViewMode === PLAYER_VIEW_MODES.MINI
+      ? PLAYER_VIEW_MODES.MAXI
+      : PLAYER_VIEW_MODES.MINI;
+
+    updatePlayerViewModeUI();
+  }
+
+  /* CHANGED-0413-1 + 0413-2: current print/version/control row button states */
+  function updateAuxPanelButtonsUI() {
+    const isPrintOpen = activeAuxPanel === AUX_PANEL_MODES.PRINT;
+    const isVersionsOpen = activeAuxPanel === AUX_PANEL_MODES.VERSIONS;
+    const isControlsOpen = activeAuxPanel === AUX_PANEL_MODES.CONTROLS && playerViewMode === PLAYER_VIEW_MODES.MAXI;
+
+    togglePrintRowBtn.classList.toggle("is-active", isPrintOpen);
+    toggleVersionsBtn.classList.toggle("is-active", isVersionsOpen);
+    toggleControlsBtn.classList.toggle("is-active", isControlsOpen);
+
+    /* CHANGED-0413-2: remove >> and add hide labels */
+    togglePrintRowBtn.textContent = isPrintOpen ? "HIDE PRINT" : "PRINT PDF";
+    toggleVersionsBtn.textContent = isVersionsOpen ? "HIDE VERSIONS" : "AUDIO VERSIONS";
+
+    controlsToggleText.textContent = isControlsOpen ? "HIDE\nCONTROLS" : "SHOW\nCONTROLS";
+
+    togglePrintRowBtn.setAttribute("aria-expanded", String(isPrintOpen));
+    toggleVersionsBtn.setAttribute("aria-expanded", String(isVersionsOpen));
+    toggleControlsBtn.setAttribute("aria-expanded", String(isControlsOpen));
+  }
+
+  /* CHANGED-0413-1: only one contextual row is visible */
+  function setAuxPanelMode(nextMode) {
+    /* CHANGED-0413-2: controls are hidden in MINI mode */
+    if (playerViewMode === PLAYER_VIEW_MODES.MINI && nextMode === AUX_PANEL_MODES.CONTROLS) {
+      activeAuxPanel = AUX_PANEL_MODES.NONE;
+    } else {
+      activeAuxPanel = activeAuxPanel === nextMode ? AUX_PANEL_MODES.NONE : nextMode;
+    }
+
+    printControlsBlock.classList.toggle("open", activeAuxPanel === AUX_PANEL_MODES.PRINT);
+    trackVersionsBlock.classList.toggle("open", activeAuxPanel === AUX_PANEL_MODES.VERSIONS);
+    advancedControlsBlock.classList.toggle("open", activeAuxPanel === AUX_PANEL_MODES.CONTROLS && playerViewMode === PLAYER_VIEW_MODES.MAXI);
+
+    updateAuxPanelButtonsUI();
+  }
+
+  function updatePdfViewer() {
+    const track = getCurrentTrack();
+    if (!track) {
+      pdfViewer.src = "";
+      return;
+    }
+    pdfViewer.src = getPreferredPdfUrl(track, getCurrentVersionType());
+  }
+
+  /* CHANGED-4: A4 ratio is now CSS-driven, JS only forces iframe height sync on some browsers */
+  function adjustPdfContainerHeight() {
+    if (!pdfContainer) return;
+    const width = pdfContainer.clientWidth;
+    if (width > 0) {
+      const a4Height = Math.round(width * 1.4142);
+      pdfContainer.style.height = `${a4Height}px`;
+    }
+  }
+
+  function loadPrevTrack(options = {}) {
+    const prevIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+    loadTrack(prevIndex, {
+      autoplay: Boolean(options.autoplay),
+      /* CHANGED-0413-2: all track switches reset to MAIN */
+      resetToMainVersion: true
+    });
+  }
+
+  function loadNextTrack(options = {}) {
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    loadTrack(nextIndex, {
+      autoplay: Boolean(options.autoplay),
+      /* CHANGED-0413-2: all track switches reset to MAIN */
+      resetToMainVersion: true
+    });
+  }
+
+  /* CHANGED-0413-1: waveform loading overlay helpers */
+  function setWaveLoadingState(isLoading) {
+    waveLoading.classList.toggle("show", isLoading);
+    waveLoading.setAttribute("aria-hidden", String(!isLoading));
+  }
+
+  function openPrintClavierPdf() {
+    window.open("https://drive.google.com/file/d/1gN3pe8_7-IULRN_FXSI5dhsj_WReb5ro/view?usp=drive_link", "_blank", "noopener");
+  }
+
+  function openPrintDuetsPdf() {
+    window.open("https://drive.google.com/file/d/1vdKNLM5J5lINtC3mdqcOTRu2pS-NLd4b/view?usp=drive_link", "_blank", "noopener");
+  }
+
+  function openPrintCurrentPdf() {
+    const track = getCurrentTrack();
+    if (!track) return;
+    window.open(getCurrentPrintablePdfUrl(track, getCurrentVersionType()), "_blank", "noopener");
+  }
+
+  // =========================
+  // CUSTOM TOOLTIPS
+  // =========================
+  function hideCustomTooltip() {
+    customTooltip.classList.remove("show");
+    customTooltip.setAttribute("aria-hidden", "true");
+    tooltipTarget = null;
+  }
+
+  function positionCustomTooltip(target) {
+    if (!target || customTooltip.getAttribute("aria-hidden") === "true") return;
+
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = customTooltip.getBoundingClientRect();
+
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    let top = rect.top - tooltipRect.height - 12;
+
+    const minLeft = 8;
+    const maxLeft = window.innerWidth - tooltipRect.width - 8;
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+
+    if (top < 8) {
+      top = rect.bottom + 12;
+    }
+
+    const maxTop = window.innerHeight - tooltipRect.height - 8;
+    top = Math.max(8, Math.min(top, maxTop));
+
+    customTooltip.style.left = `${left}px`;
+    customTooltip.style.top = `${top}px`;
+  }
+
+  function showCustomTooltip(target) {
+    if (tooltipMode === TOOLTIP_MODES.OFF) return;
+
+    const text = target.getAttribute("data-tooltip");
+    if (!text) return;
+
+    const tooltipKey = getTooltipKey(target);
+    if (tooltipMode === TOOLTIP_MODES.ONCE && tooltipKey && seenTooltipKeys.has(tooltipKey)) return;
+
+    tooltipTarget = target;
+    customTooltip.textContent = text;
+    customTooltip.classList.add("show");
+    customTooltip.setAttribute("aria-hidden", "false");
+    positionCustomTooltip(target);
+
+    if (tooltipMode === TOOLTIP_MODES.ONCE) {
+      rememberTooltipSeen(target);
+    }
+  }
+
+  function initCustomTooltips() {
+    const tooltipElements = document.querySelectorAll("[title]");
+
+    tooltipElements.forEach((element, index) => {
+      const titleText = element.getAttribute("title");
+      if (!titleText) return;
+
+      element.setAttribute("data-tooltip", titleText);
+
+      let tooltipKey = "";
+      if (element.id) {
+        tooltipKey = `id:${element.id}`;
+      } else if (element.dataset.type) {
+        tooltipKey = `type:${element.dataset.type}`;
+      } else if (element.getAttribute("href")) {
+        tooltipKey = `href:${element.getAttribute("href")}`;
+      } else {
+        tooltipKey = `auto:${index}:${titleText.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40)}`;
+      }
+
+      element.setAttribute("data-tooltip-key", tooltipKey);
+      element.removeAttribute("title");
+
+      element.addEventListener("mouseenter", () => showCustomTooltip(element));
+      element.addEventListener("mouseleave", hideCustomTooltip);
+      element.addEventListener("focus", () => showCustomTooltip(element));
+      element.addEventListener("blur", hideCustomTooltip);
+
+      element.addEventListener("mousemove", () => {
+        if (tooltipTarget === element && tooltipMode !== TOOLTIP_MODES.OFF) {
+          positionCustomTooltip(element);
+        }
+      });
+    });
+
+    window.addEventListener("scroll", () => {
+      if (tooltipTarget && tooltipMode !== TOOLTIP_MODES.OFF) positionCustomTooltip(tooltipTarget);
+    }, true);
+
+    window.addEventListener("resize", () => {
+      if (tooltipTarget && tooltipMode !== TOOLTIP_MODES.OFF) positionCustomTooltip(tooltipTarget);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") hideCustomTooltip();
+    });
+  }
+
+  // =========================
+  // WAVEFORM
+  // =========================
+  function drawCircleHandle(x, color) {
+    ctx.beginPath();
+    ctx.arc(x, LOOP_HANDLE_RADIUS + 4, LOOP_HANDLE_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawWaveform() {
+    const width = canvas.clientWidth;
+    const height = WAVEFORM_HEIGHT;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!waveformData.length) return;
+
+    const mid = height / 2;
+    const step = Math.max(1, Math.floor(waveformData.length / width));
+
+    ctx.fillStyle = "#3399ff";
+    for (let x = 0; x < width; x++) {
+      let min = 1;
+      let max = -1;
+
+      for (let i = 0; i < step; i++) {
+        const sample = waveformData[(x * step) + i] || 0;
+        if (sample < min) min = sample;
+        if (sample > max) max = sample;
+      }
+
+      ctx.fillRect(x, mid + (min * mid), 1, Math.max(1, (max - min) * mid));
+    }
+
+    const duration = getTrackDurationSafe();
+
+    if (duration) {
+      const playX = (getSafeCurrentTime() / duration) * width;
+      ctx.fillStyle = "rgba(51,153,255,0.25)";
+      ctx.fillRect(0, 0, playX, height);
+    }
+
+    if (loopA !== null && loopB !== null && duration) {
+      const x1 = (loopA / duration) * width;
+      const x2 = (loopB / duration) * width;
+      ctx.fillStyle = "rgba(255,190,40,0.28)";
+      ctx.fillRect(x1, 0, x2 - x1, height);
+    }
+
+    if (loopA !== null && duration) {
+      const xA = (loopA / duration) * width;
+      ctx.fillStyle = "#00c853";
+      ctx.fillRect(xA - Math.floor(LOOP_LINE_WIDTH / 2), 0, LOOP_LINE_WIDTH, height);
+      drawCircleHandle(xA, "#00c853");
+    }
+
+    if (loopB !== null && duration) {
+      const xB = (loopB / duration) * width;
+      ctx.fillStyle = "#ff9800";
+      ctx.fillRect(xB - Math.floor(LOOP_LINE_WIDTH / 2), 0, LOOP_LINE_WIDTH, height);
+      drawCircleHandle(xB, "#ff9800");
+    }
+
+    if (duration) {
+      const currentX = (getSafeCurrentTime() / duration) * width;
+      ctx.fillStyle = "red";
+      ctx.fillRect(currentX, 0, 2, height);
+    }
+  }
+
+  async function decodeWaveform(url) {
+    clearError();
+    const decodeToken = ++currentDecodeToken;
+    setWaveLoadingState(true);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Audio file request failed with status ${response.status}`);
+      }
+
+      const buffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(buffer.slice(0));
+
+      if (decodeToken !== currentDecodeToken) return;
+
+      waveformData = Array.from(audioBuffer.getChannelData(0));
+      drawWaveform();
+    } catch (error) {
+      if (decodeToken !== currentDecodeToken) return;
+
+      waveformData = [];
+      drawWaveform();
+      showError("Could not load waveform for this audio file.");
+      console.error("Waveform decode error:", error);
+    } finally {
+      if (decodeToken === currentDecodeToken) {
+        setWaveLoadingState(false);
+      }
+    }
+  }
+
+  // =========================
+  // VERSION CHECKING
+  // =========================
+  async function requestExistsWithFallback(url) {
+    try {
+      const headResponse = await fetch(url, { method: "HEAD" });
+
+      if (headResponse.ok) return true;
+
+      if ([400, 403, 405, 406, 501].includes(headResponse.status)) {
+        const getResponse = await fetch(url, {
+          method: "GET",
+          headers: { Range: "bytes=0-0" }
+        });
+        return getResponse.ok || getResponse.status === 206;
+      }
+
+      return false;
+    } catch (error) {
+      try {
+        const fallbackResponse = await fetch(url, {
+          method: "GET",
+          headers: { Range: "bytes=0-0" }
+        });
+        return fallbackResponse.ok || fallbackResponse.status === 206;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  async function checkFileExists(url) {
+    if (versionAvailabilityCache.has(url)) {
+      return versionAvailabilityCache.get(url);
+    }
+
+    const exists = await requestExistsWithFallback(url);
+    versionAvailabilityCache.set(url, exists);
+    return exists;
+  }
+
+  async function updateVersionButtons() {
+    const track = getCurrentTrack();
+    if (!track) return;
+
+    const versions = getTrackVersions(track.id);
+    const buttons = Array.from(document.querySelectorAll("#trackVersions .versionButton"));
+
+    await Promise.all(
+      buttons.map(async (button) => {
+        const type = button.dataset.type;
+        const url = versions[type];
+
+        button.classList.remove("disabled");
+
+        if (!url) {
+          button.classList.add("disabled");
+          return;
+        }
+
+        const exists = await checkFileExists(url);
+        if (!exists) button.classList.add("disabled");
+      })
+    );
+  }
+
+  function setActiveVersion(type) {
+    document.querySelectorAll("#trackVersions .versionButton").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.type === type);
+    });
+  }
+
+  async function switchVersion(type) {
+    const currentTrack = getCurrentTrack();
+    if (!currentTrack) return;
+
+    const versions = getTrackVersions(currentTrack.id);
+    const newUrl = versions[type];
+
+    if (!newUrl) return;
+
+    const exists = await checkFileExists(newUrl);
+    if (!exists) {
+      showError("This audio version is not available.");
+      return;
+    }
+
+    clearError();
+
+    const currentTimeBeforeSwitch = getSafeCurrentTime();
+    const wasPlaying = !audio.paused;
+
+    middlePlaybackAnchorTime = currentTimeBeforeSwitch;
+
+    audio.src = newUrl;
+    audio.dataset.base = currentTrack.id;
+    audio.dataset.version = type;
+
+    updatePdfViewer();
+    setActiveVersion(type);
+
+    audio.addEventListener("loadedmetadata", () => {
+      const duration = getTrackDurationSafe();
+      audio.currentTime = clamp(currentTimeBeforeSwitch, 0, duration || 0);
+      middlePlaybackAnchorTime = clamp(middlePlaybackAnchorTime, 0, duration || 0);
+      audio.playbackRate = currentSpeed;
+      updateHeaderInfo();
+      updateTimeDisplay();
+      drawWaveform();
+
+      if (wasPlaying) {
+        audio.play().catch((error) => {
+          console.error("Playback after version switch was blocked:", error);
+        });
+      } else {
+        forcePlayButtonsToStoppedState();
+      }
+    }, { once:true });
+
+    decodeWaveform(newUrl);
+  }
+
+  // =========================
+  // PLAYLIST
+  // =========================
+  function updatePlaylist() {
+    playlist.innerHTML = "";
+
+    tracks.forEach((track, index) => {
+      const li = document.createElement("li");
+      li.className = "playlistItem";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "trackButton";
+      button.textContent = `${track.name}, (Dur: ${getTrackDurationText(track)})`;
+
+      button.classList.toggle("current", index === currentTrackIndex);
+      button.classList.toggle("is-active", index === currentTrackIndex);
+
+      button.addEventListener("click", () => {
+        loadTrack(index, {
+          autoplay: shouldAutoplayOnTrackChange(),
+          /* CHANGED-0413-2: track switch always loads MAIN */
+          resetToMainVersion: true
+        });
+      });
+
+      li.appendChild(button);
+      playlist.appendChild(li);
+    });
+  }
+
+  // =========================
+  // TRACK LOADING
+  // =========================
+  function applyTrackUI(track) {
+    updatePdfViewer();
+    updateHeaderInfo();
+    updatePlaylist();
+  }
+
+  function resetStateForNewTrack() {
+    resetLoop();
+    clearWaveformState();
+    clearError();
+    setSpeed(DEFAULT_SPEED);
+    stopHoldSeek();
+    middlePlaybackAnchorTime = 0;
+  }
+
+  function resolveTrackVersionUrl(track, versionType) {
+    const versions = getTrackVersions(track.id);
+    return versions[versionType] || versions.main || track.url;
+  }
+
+  function loadTrack(index, options = {}) {
+    const {
+      autoplay = false,
+      resetToMainVersion = true
+    } = options;
+
+    currentTrackIndex = index;
+    const track = getCurrentTrack();
+
+    audio.pause();
+    forcePlayButtonsToStoppedState();
+
+    resetStateForNewTrack();
+
+    const requestedVersionType = resetToMainVersion ? "main" : (audio.dataset.version || "main");
+    const trackUrl = resolveTrackVersionUrl(track, requestedVersionType);
+
+    audio.src = trackUrl;
+    audio.dataset.base = track.id;
+    audio.dataset.version = requestedVersionType;
+
+    applyTrackUI(track);
+    setActiveVersion(requestedVersionType);
+    updateVersionButtons();
+    decodeWaveform(trackUrl);
+    preloadNextTrack();
+
+    if (autoplay) {
+      middlePlaybackAnchorTime = 0;
+      audio.play().catch((error) => {
+        console.error("Autoplay was blocked:", error);
+      });
+    }
+  }
+
+  // =========================
+  // LOOP
+  // =========================
+  function setLoopA() {
+    if (loopB !== null && getSafeCurrentTime() > loopB) return;
+    loopA = getSafeCurrentTime();
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function setLoopB() {
+    if (loopA !== null && getSafeCurrentTime() < loopA) return;
+    loopB = getSafeCurrentTime();
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  function updateDraggedLoopHandleFromX(x, duration, width) {
+    let time = (x / width) * duration;
+
+    if (draggingHandle === "A") {
+      if (loopB !== null && time > loopB) time = loopB;
+      loopA = clamp(time, 0, duration);
+    } else if (draggingHandle === "B") {
+      if (loopA !== null && time < loopA) time = loopA;
+      loopB = clamp(time, 0, duration);
+    }
+
+    updateLoopButtonsUI();
+    drawWaveform();
+  }
+
+  // =========================
+  // EVENTS
+  // =========================
+  topPlayPause.addEventListener("click", togglePlayPause);
+  topCenterPlayPause.addEventListener("click", togglePlayPause);
+  middlePlayPause.addEventListener("click", toggleMiddlePlaybackStartStop);
+
+  playModeButton.addEventListener("click", cyclePlayMode);
+
+  /* CHANGED-0413-1: contextual rows */
+  togglePrintRowBtn.addEventListener("click", () => setAuxPanelMode(AUX_PANEL_MODES.PRINT));
+  toggleVersionsBtn.addEventListener("click", () => setAuxPanelMode(AUX_PANEL_MODES.VERSIONS));
+  toggleControlsBtn.addEventListener("click", () => setAuxPanelMode(AUX_PANEL_MODES.CONTROLS));
+
+  /* CHANGED-0413-2: MINI/MAXI button */
+  togglePlayerModeBtn.addEventListener("click", togglePlayerViewMode);
+
+  printClavierButton.addEventListener("click", openPrintClavierPdf);
+  printDuetsButton.addEventListener("click", openPrintDuetsPdf);
+  printCurrentButton.addEventListener("click", openPrintCurrentPdf);
+  closePrintRowButton.addEventListener("click", () => setAuxPanelMode(AUX_PANEL_MODES.PRINT));
+
+  toggleHelpBtn.addEventListener("click", toggleHelpPanel);
+
+  tooltipModeOffButton.addEventListener("click", () => setTooltipMode(TOOLTIP_MODES.OFF));
+  tooltipModeOnceButton.addEventListener("click", () => setTooltipMode(TOOLTIP_MODES.ONCE, { resetSeen:true }));
+  tooltipModeAlwaysButton.addEventListener("click", () => setTooltipMode(TOOLTIP_MODES.ALWAYS));
+
+  document.querySelectorAll("#trackVersions .versionButton").forEach((button) => {
+    button.addEventListener("click", () => switchVersion(button.dataset.type));
+  });
+
+  /* CHANGED-0413-2: previous/next track buttons */
+  prevTrackButton.addEventListener("click", () => {
+    loadPrevTrack({ autoplay: shouldAutoplayOnTrackChange() });
+  });
+
+  nextTrackButton.addEventListener("click", () => {
+    loadNextTrack({ autoplay: shouldAutoplayOnTrackChange() });
+  });
+
+  speedMinusButton.addEventListener("click", () => setSpeed(currentSpeed - SPEED_STEP));
+  speedPlusButton.addEventListener("click", () => setSpeed(currentSpeed + SPEED_STEP));
+  speedResetButton.addEventListener("click", () => setSpeed(DEFAULT_SPEED));
+
+  loopAButton.addEventListener("click", setLoopA);
+  loopBButton.addEventListener("click", setLoopB);
+  loopCButton.addEventListener("click", resetLoop);
+
+  speedSlider.addEventListener("input", () => {
+    setSpeed(speedSlider.value);
+  });
+
+  speedSlider.addEventListener("change", blurActiveSlider);
+  speedSlider.addEventListener("mouseup", blurActiveSlider);
+  speedSlider.addEventListener("touchend", blurActiveSlider);
+
+  volumeSlider.addEventListener("input", () => {
+    if (hasIOSVolumeRestriction) {
+      handleIOSVolumeAttempt();
+      return;
+    }
+
+    audio.volume = parseFloat(volumeSlider.value);
+    updateVolumeUI();
+  });
+
+  volumeSlider.addEventListener("change", blurActiveSlider);
+  volumeSlider.addEventListener("mouseup", blurActiveSlider);
+  volumeSlider.addEventListener("touchend", blurActiveSlider);
+
+  function bindHoldSeek(button, delta) {
+    button.addEventListener("mousedown", () => startHoldSeek(delta));
+    button.addEventListener("mouseup", stopHoldSeek);
+    button.addEventListener("mouseleave", stopHoldSeek);
+    button.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      startHoldSeek(delta);
+    }, { passive:false });
+    button.addEventListener("touchend", stopHoldSeek);
+    button.addEventListener("touchcancel", stopHoldSeek);
+  }
+
+  function bindSliderHotkeyOverride(slider) {
+    slider.addEventListener("keydown", (event) => {
+      const key = (event.key || "").toLowerCase();
+
+      switch (key) {
+        case " ":
+          event.preventDefault();
+          togglePlayPause();
+          blurActiveSlider();
+          break;
+
+        case "arrowright":
+          event.preventDefault();
+          seekBy(SEEK_STEP_SECONDS);
+          break;
+
+        case "arrowleft":
+          event.preventDefault();
+          seekBy(-SEEK_STEP_SECONDS);
+          break;
+
+        case "arrowup":
+          event.preventDefault();
+          setSpeed(currentSpeed + SPEED_STEP);
+          break;
+
+        case "arrowdown":
+          event.preventDefault();
+          setSpeed(currentSpeed - SPEED_STEP);
+          break;
+
+        case "r":
+        case "к":
+          event.preventDefault();
+          setSpeed(DEFAULT_SPEED);
+          blurActiveSlider();
+          break;
+
+        /* CHANGED-0413-1: S/F/C loop hotkeys */
+        case "s":
+        case "ы":
+          event.preventDefault();
+          setLoopA();
+          blurActiveSlider();
+          break;
+
+        case "f":
+        case "а":
+          event.preventDefault();
+          setLoopB();
+          blurActiveSlider();
+          break;
+
+        case "p":
+        case "з":
+          event.preventDefault();
+          setAuxPanelMode(AUX_PANEL_MODES.PRINT);
+          blurActiveSlider();
+          break;
+
+        /* CHANGED-0413-2: A hotkey for versions row */
+        case "a":
+        case "ф":
+          event.preventDefault();
+          setAuxPanelMode(AUX_PANEL_MODES.VERSIONS);
+          blurActiveSlider();
+          break;
+
+        /* CHANGED-0413-2: M hotkey for MINI/MAXI */
+        case "m":
+        case "ь":
+          event.preventDefault();
+          togglePlayerViewMode();
+          blurActiveSlider();
+          break;
+
+        case "t":
+        case "е":
+          event.preventDefault();
+          cycleTooltipMode();
+          blurActiveSlider();
+          break;
+
+        case "h":
+        case "р":
+          event.preventDefault();
+          toggleHelpPanel();
+          blurActiveSlider();
+          break;
+
+        default:
+          if (isKeyInSet(key, ["c", "с"])) {
+            event.preventDefault();
+            resetLoop();
+            blurActiveSlider();
+          }
+          break;
+      }
+    });
+  }
+
+  bindHoldSeek(seekBackButton, -SEEK_STEP_SECONDS);
+  bindHoldSeek(seekForwardButton, SEEK_STEP_SECONDS);
+
+  bindSliderHotkeyOverride(volumeSlider);
+  bindSliderHotkeyOverride(speedSlider);
+
+  function blurButtonAfterPointerUse(button) {
+    const blurIfActive = () => {
+      if (document.activeElement === button) {
+        button.blur();
+      }
+    };
+
+    button.addEventListener("mouseup", blurIfActive);
+    button.addEventListener("mouseleave", blurIfActive);
+    button.addEventListener("touchend", blurIfActive);
+    button.addEventListener("touchcancel", blurIfActive);
+  }
+
+  [
+    topPlayPause,
+    topCenterPlayPause,
+    middlePlayPause,
+    playModeButton,
+    togglePrintRowBtn,
+    toggleVersionsBtn,
+    toggleControlsBtn,
+    toggleHelpBtn,
+    togglePlayerModeBtn,
+    printClavierButton,
+    printDuetsButton,
+    printCurrentButton,
+    closePrintRowButton,
+    tooltipModeOffButton,
+    tooltipModeOnceButton,
+    tooltipModeAlwaysButton,
+    prevTrackButton,
+    nextTrackButton,
+    seekBackButton,
+    seekForwardButton,
+    speedMinusButton,
+    speedPlusButton,
+    speedResetButton,
+    loopAButton,
+    loopBButton,
+    loopCButton,
+    ...document.querySelectorAll("#trackVersions .versionButton")
+  ].forEach(blurButtonAfterPointerUse);
+
+  audio.addEventListener("play", () => {
+    syncAllPlayButtonsVisual();
+  });
+
+  audio.addEventListener("pause", () => {
+    syncAllPlayButtonsVisual();
+  });
+
+  audio.addEventListener("loadedmetadata", () => {
+    updateHeaderInfo();
+    updateTimeDisplay();
+    updatePlaylist();
+    drawWaveform();
+    syncAllPlayButtonsVisual();
+    updateLoopButtonsUI();
+    adjustPdfContainerHeight();
+  });
+
+  audio.addEventListener("timeupdate", () => {
+    updateTimeDisplay();
+    drawWaveform();
+
+    if (loopA !== null && loopB !== null && getSafeCurrentTime() >= loopB) {
+      setCurrentTimeSafely(loopA);
+    }
+  });
+
+  /* CHANGED-0413-1: rebuilt end-of-track logic */
+  audio.addEventListener("ended", () => {
+    stopHoldSeek();
+    resetLoop();
+
+    if (playMode === PLAY_MODES.PLAY_ALL_PIECES) {
+      middlePlaybackAnchorTime = 0;
+      loadNextTrack({ autoplay: true });
+      return;
+    }
+
+    if (playMode === PLAY_MODES.PLAY_ONE_BY_ONE) {
+      middlePlaybackAnchorTime = 0;
+      loadNextTrack({ autoplay: false });
+      return;
+    }
+
+    if (playMode === PLAY_MODES.PLAY_ONE_PIECE) {
+      middlePlaybackAnchorTime = 0;
+      audio.pause();
+      setCurrentTimeSafely(0);
+      forcePlayButtonsToStoppedState();
+    }
+  });
+
+  audio.addEventListener("error", () => {
+    showError("Could not load the selected audio file.");
+    setWaveLoadingState(false);
+    forcePlayButtonsToStoppedState();
+  });
+
+  function handleCanvasPointerDown(event) {
+    const duration = getTrackDurationSafe();
+    if (!duration) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = getCanvasXFromEvent(event);
+    const clickedTime = (x / rect.width) * duration;
+    const handle = getHandleAtX(x, duration, rect.width);
+
+    /* CHANGED-4: if very close to handle => drag, otherwise exact seek */
+    if (handle) {
+      draggingHandle = handle;
+      if (event.cancelable) event.preventDefault();
+      return;
+    }
+
+    setCurrentTimeByUser(clickedTime);
+    if (event.cancelable) event.preventDefault();
+  }
+
+  function handleCanvasPointerMove(event) {
+    const duration = getTrackDurationSafe();
+    if (!draggingHandle || !duration) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = getCanvasXFromEvent(event);
+    updateDraggedLoopHandleFromX(x, duration, rect.width);
+
+    if (event.cancelable) event.preventDefault();
+  }
+
+  function stopDraggingLoopHandle() {
+    draggingHandle = null;
+  }
+
+  canvas.addEventListener("mousedown", handleCanvasPointerDown);
+  canvas.addEventListener("mousemove", handleCanvasPointerMove);
+  canvas.addEventListener("mouseup", stopDraggingLoopHandle);
+  canvas.addEventListener("mouseleave", stopDraggingLoopHandle);
+
+  canvas.addEventListener("touchstart", handleCanvasPointerDown, { passive:false });
+  canvas.addEventListener("touchmove", handleCanvasPointerMove, { passive:false });
+  canvas.addEventListener("touchend", stopDraggingLoopHandle, { passive:false });
+  canvas.addEventListener("touchcancel", stopDraggingLoopHandle, { passive:false });
+
+  document.addEventListener("mouseup", stopHoldSeek);
+  document.addEventListener("touchend", stopHoldSeek);
+  document.addEventListener("touchcancel", stopHoldSeek);
+
+  document.addEventListener("keydown", (event) => {
+    if (isEditableTarget(event.target)) return;
+
+    const key = (event.key || "").toLowerCase();
+
+    const shouldPreventDefault = [
+      " ",
+      "arrowleft",
+      "arrowright",
+      "arrowup",
+      "arrowdown"
+    ].includes(key);
+
+    if (shouldPreventDefault) event.preventDefault();
+
+    switch (key) {
+      case " ":
+        togglePlayPause();
+        break;
+
+      case "arrowright":
+        seekBy(SEEK_STEP_SECONDS);
+        break;
+
+      case "arrowleft":
+        seekBy(-SEEK_STEP_SECONDS);
+        break;
+
+      case "arrowup":
+        setSpeed(currentSpeed + SPEED_STEP);
+        break;
+
+      case "arrowdown":
+        setSpeed(currentSpeed - SPEED_STEP);
+        break;
+
+      case "r":
+      case "к":
+        setSpeed(DEFAULT_SPEED);
+        break;
+
+      /* CHANGED-0413-1: S/F/C/P hotkeys reassigned */
+      case "s":
+      case "ы":
+        setLoopA();
+        break;
+
+      case "f":
+      case "а":
+        setLoopB();
+        break;
+
+      case "c":
+      case "с":
+        resetLoop();
+        break;
+
+      case "p":
+      case "з":
+        setAuxPanelMode(AUX_PANEL_MODES.PRINT);
+        break;
+
+      /* CHANGED-0413-2: A hotkey for versions row */
+      case "a":
+      case "ф":
+        setAuxPanelMode(AUX_PANEL_MODES.VERSIONS);
+        break;
+
+      /* CHANGED-0413-2: M hotkey for MINI/MAXI */
+      case "m":
+      case "ь":
+        togglePlayerViewMode();
+        break;
+
+      case "t":
+      case "е":
+        cycleTooltipMode();
+        break;
+
+      case "h":
+      case "р":
+        toggleHelpPanel();
+        break;
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    /* CHANGED-0413-2: keep manual mode after init; only redraw layout */
+    resizeCanvas();
+    adjustPdfContainerHeight();
+  });
+
+  // =========================
+  // INIT
+  // =========================
+  function init() {
+    seenTooltipKeys = loadSeenTooltipKeys();
+    tooltipMode = loadTooltipMode();
+
+    initCustomTooltips();
+
+    audio.volume = DEFAULT_VOLUME;
+    volumeSlider.value = DEFAULT_VOLUME;
+    updateVolumeUI();
+
+    setSpeed(DEFAULT_SPEED);
+
+    /* CHANGED-0413-2: default player mode by screen size */
+    playerViewMode = isCompactScreen() ? PLAYER_VIEW_MODES.MINI : PLAYER_VIEW_MODES.MAXI;
+
+    updatePlayModeUI();
+    updatePlayerViewModeUI();
+    syncAllPlayButtonsVisual();
+    updateLoopButtonsUI();
+    updateTooltipControlUI();
+    updateAuxPanelButtonsUI();
+
+    updateToggleButtonState(toggleHelpBtn, false, "HIDE HELP / INFO", "HELP / INFO");
+
+    resizeCanvas();
+    adjustPdfContainerHeight();
+    loadTrack(0, { autoplay: false, resetToMainVersion: true });
+  }
+
+  init();
+</script>
+</body>
+</html>
